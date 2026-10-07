@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
-import { X, Upload, Camera, Shield, User, FileText, MapPin, Calendar, Clock, AlertCircle } from 'lucide-react';
-import { IndividuoMonitorado, PerfilTipo, MotivoEntrada } from '../types/monitoring';
+import React, { useState, useEffect } from 'react';
+import { X, Upload, Camera, Shield, User, FileText, MapPin, Calendar, Clock, AlertCircle, Edit3 } from 'lucide-react';
+import { IndividuoMonitorado, PerfilTipo, MotivoEntrada, StatusMonitoramento } from '../types/monitoring';
 import { calcularIdade, obterFaixaEtaria, rotuloFaixaEtaria, TIPOS_PENAIS_COMUNS } from '../utils/ageUtils';
 
 interface CadastrarIndividuoModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSalvar: (novo: IndividuoMonitorado) => void;
+  onSalvar: (novoOuAtualizado: IndividuoMonitorado) => void;
   individuosExistentes: IndividuoMonitorado[];
+  individuoParaEditar?: IndividuoMonitorado | null;
 }
 
 export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = ({
@@ -15,10 +16,13 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
   onClose,
   onSalvar,
   individuosExistentes,
+  individuoParaEditar,
 }) => {
   const agora = new Date();
   const dataHojeStr = agora.toISOString().split('T')[0];
   const horaAgoraStr = agora.toTimeString().slice(0, 5);
+
+  const isEdicao = !!individuoParaEditar;
 
   // Form State
   const [nomeCompleto, setNomeCompleto] = useState('');
@@ -26,6 +30,7 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
   const [dataNascimento, setDataNascimento] = useState('1995-05-15');
   const [genero, setGenero] = useState<'MASCULINO' | 'FEMININO' | 'OUTRO'>('MASCULINO');
   const [perfil, setPerfil] = useState<PerfilTipo>('MONITORADO_GERAL');
+  const [status, setStatus] = useState<StatusMonitoramento>('ATIVO');
   const [fotoUrl, setFotoUrl] = useState('');
 
   // Dados Jurídicos
@@ -42,19 +47,86 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
   const [raioExclusao, setRaioExclusao] = useState(500);
   const [individuoVinculadoId, setIndividuoVinculadoId] = useState('');
 
-  // Entrada Inicial
+  // Entrada Inicial (usado em novo cadastro)
   const [dataEntrada, setDataEntrada] = useState(dataHojeStr);
   const [horaEntrada, setHoraEntrada] = useState(horaAgoraStr);
   const [motivoEntrada, setMotivoEntrada] = useState<MotivoEntrada>('INSTALACAO_INICIAL');
   const [responsavelOperacional, setResponsavelOperacional] = useState('Agente Policial Penal');
   const [numeroOficio, setNumeroOficio] = useState('');
 
-  // Endereço
+  // Endereço e Contatos
   const [enderecoResidencial, setEnderecoResidencial] = useState('');
   const [cidade, setCidade] = useState('');
   const [estado, setEstado] = useState('SP');
   const [telefoneContato, setTelefoneContato] = useState('');
   const [observacoesGerais, setObservacoesGerais] = useState('');
+
+  // Sincronizar quando abrir ou quando mudar individuoParaEditar
+  useEffect(() => {
+    if (individuoParaEditar) {
+      setNomeCompleto(individuoParaEditar.nomeCompleto || '');
+      setCpf(individuoParaEditar.cpf || '');
+      setDataNascimento(individuoParaEditar.dataNascimento || '1995-05-15');
+      setGenero(individuoParaEditar.genero || 'MASCULINO');
+      setPerfil(individuoParaEditar.perfil || 'MONITORADO_GERAL');
+      setStatus(individuoParaEditar.status || 'ATIVO');
+      setFotoUrl(individuoParaEditar.fotoUrl || '');
+
+      // Verificar se o tipo penal está na lista padrão
+      if (TIPOS_PENAIS_COMUNS.includes(individuoParaEditar.tipoPenal)) {
+        setTipoPenalSelect(individuoParaEditar.tipoPenal);
+        setTipoPenalCustom('');
+      } else {
+        setTipoPenalSelect('OUTRO');
+        setTipoPenalCustom(individuoParaEditar.tipoPenal || '');
+      }
+
+      setNumeroProcesso(individuoParaEditar.numeroProcesso || '');
+      setVaraJudicial(individuoParaEditar.varaJudicial || 'Vara Criminal');
+      setComarca(individuoParaEditar.comarca || 'Comarca Central');
+      setResumoTipificacao(individuoParaEditar.resumoTipificacao || '');
+
+      setNumeroTornozeleira(individuoParaEditar.numeroTornozeleiraOuReceptor || '');
+      setImeiDispositivo(individuoParaEditar.imeiDispositivo || '');
+      setRaioExclusao(individuoParaEditar.raioExclusaoMetros || 500);
+      setIndividuoVinculadoId(individuoParaEditar.individuoVinculadoId || '');
+
+      setEnderecoResidencial(individuoParaEditar.enderecoResidencial || '');
+      setCidade(individuoParaEditar.cidade || '');
+      setEstado(individuoParaEditar.estado || 'SP');
+      setTelefoneContato(individuoParaEditar.telefoneContato || '');
+      setObservacoesGerais(individuoParaEditar.observacoesGerais || '');
+    } else {
+      // Reset para novo cadastro
+      setNomeCompleto('');
+      setCpf('');
+      setDataNascimento('1995-05-15');
+      setGenero('MASCULINO');
+      setPerfil('MONITORADO_GERAL');
+      setStatus('ATIVO');
+      setFotoUrl('');
+      setTipoPenalSelect('Art. 129, § 9º - Lesão Corporal (Violência Doméstica)');
+      setTipoPenalCustom('');
+      setNumeroProcesso('');
+      setVaraJudicial('Vara Criminal');
+      setComarca('Comarca Central');
+      setResumoTipificacao('');
+      setNumeroTornozeleira('');
+      setImeiDispositivo('');
+      setRaioExclusao(500);
+      setIndividuoVinculadoId('');
+      setDataEntrada(dataHojeStr);
+      setHoraEntrada(horaAgoraStr);
+      setMotivoEntrada('INSTALACAO_INICIAL');
+      setResponsavelOperacional('Agente Policial Penal');
+      setNumeroOficio('');
+      setEnderecoResidencial('');
+      setCidade('');
+      setEstado('SP');
+      setTelefoneContato('');
+      setObservacoesGerais('');
+    }
+  }, [individuoParaEditar, isOpen]);
 
   // Calculate age and age group dynamically
   const idadeCalculada = calcularIdade(dataNascimento);
@@ -73,8 +145,8 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
     }
   };
 
-  const handleUsarFotoExemplo = (tipo: 'masculino' | 'feminino') => {
-    if (tipo === 'masculino') {
+  const handleUsarFotoExemplo = (tipoFoto: 'masculino' | 'feminino') => {
+    if (tipoFoto === 'masculino') {
       setFotoUrl('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80');
     } else {
       setFotoUrl('https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&auto=format&fit=crop&q=80');
@@ -88,7 +160,6 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
       return;
     }
 
-    const dataHoraIso = new Date(`${dataEntrada}T${horaEntrada}:00`).toISOString();
     const tipoPenalFinal = tipoPenalSelect === 'OUTRO' ? tipoPenalCustom : tipoPenalSelect;
 
     let nomeVinculado = '';
@@ -97,6 +168,41 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
       if (vinc) nomeVinculado = vinc.nomeCompleto;
     }
 
+    if (isEdicao && individuoParaEditar) {
+      // Edição de cadastro existente
+      const atualizado: IndividuoMonitorado = {
+        ...individuoParaEditar,
+        nomeCompleto,
+        cpf: cpf || '000.000.000-00',
+        dataNascimento,
+        genero,
+        perfil,
+        status,
+        fotoUrl: fotoUrl || individuoParaEditar.fotoUrl,
+        numeroProcesso,
+        varaJudicial: varaJudicial || 'Vara Criminal',
+        comarca: comarca || 'Comarca Central',
+        tipoPenal: tipoPenalFinal || 'Não especificado',
+        resumoTipificacao,
+        numeroTornozeleiraOuReceptor: numeroTornozeleira || individuoParaEditar.numeroTornozeleiraOuReceptor,
+        imeiDispositivo,
+        raioExclusaoMetros: perfil !== 'MONITORADO_GERAL' ? raioExclusao : undefined,
+        individuoVinculadoId: individuoVinculadoId || undefined,
+        nomeIndividuoVinculado: nomeVinculado || undefined,
+        enderecoResidencial: enderecoResidencial || 'Endereço residencial cadastrado',
+        cidade: cidade || 'São Paulo',
+        estado,
+        telefoneContato,
+        observacoesGerais,
+      };
+
+      onSalvar(atualizado);
+      onClose();
+      return;
+    }
+
+    // Novo cadastro
+    const dataHoraIso = new Date(`${dataEntrada}T${horaEntrada}:00`).toISOString();
     const novoId = `mon-${Date.now()}`;
 
     const novoIndividuo: IndividuoMonitorado = {
@@ -149,13 +255,21 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-400/10 border border-amber-400/30 flex items-center justify-center text-amber-400">
-              <Shield className="w-4 h-4" />
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+              isEdicao
+                ? 'bg-blue-500/10 border border-blue-500/30 text-blue-400'
+                : 'bg-amber-400/10 border border-amber-400/30 text-amber-400'
+            }`}>
+              {isEdicao ? <Edit3 className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">Novo Cadastro no Sistema de Monitoramento</h2>
+              <h2 className="text-base font-bold text-white">
+                {isEdicao ? 'Editar Cadastro de Pessoa no Monitoramento' : 'Novo Cadastro no Sistema de Monitoramento'}
+              </h2>
               <p className="text-xs text-slate-400">
-                Registro de pessoa, tipo penal, processo, equipamento e entrada inicial
+                {isEdicao
+                  ? `Atualização cadastral de: ${individuoParaEditar?.nomeCompleto}`
+                  : 'Registro de pessoa, tipo penal, processo, equipamento e entrada inicial'}
               </p>
             </div>
           </div>
@@ -197,7 +311,7 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
 
                   <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white cursor-pointer transition-opacity text-xs font-medium gap-1">
                     <Upload className="w-5 h-5" />
-                    <span>Carregar Foto</span>
+                    <span>{fotoUrl ? 'Alterar Foto' : 'Carregar Foto'}</span>
                     <input type="file" accept="image/*" onChange={handleFotoUpload} className="hidden" />
                   </label>
                 </div>
@@ -208,7 +322,7 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
                     onClick={() => handleUsarFotoExemplo('masculino')}
                     className="text-[10px] text-slate-400 hover:text-amber-300 underline"
                   >
-                    Foto Exemplo Masc.
+                    Exemplo Masc.
                   </button>
                   <span className="text-slate-600">·</span>
                   <button
@@ -216,7 +330,7 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
                     onClick={() => handleUsarFotoExemplo('feminino')}
                     className="text-[10px] text-slate-400 hover:text-amber-300 underline"
                   >
-                    Foto Exemplo Fem.
+                    Exemplo Fem.
                   </button>
                 </div>
               </div>
@@ -232,7 +346,7 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
                     required
                     value={nomeCompleto}
                     onChange={(e) => setNomeCompleto(e.target.value)}
-                    placeholder="Ex: João da Silva Santos"
+                    placeholder="Ex: Carlos Eduardo da Silva"
                     className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
                   />
                 </div>
@@ -278,7 +392,7 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
                 <div className="flex flex-col justify-end">
                   <div className="p-2 bg-slate-900 border border-slate-800 rounded-lg text-xs flex items-center justify-between">
                     <div>
-                      <span className="text-slate-400 block text-[10px]">Idade Calculada:</span>
+                      <span className="text-slate-400 block text-[10px]">Idade Atual:</span>
                       <span className="font-bold text-white font-mono">{idadeCalculada} anos</span>
                     </div>
                     <div className="text-right">
@@ -287,6 +401,25 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
                     </div>
                   </div>
                 </div>
+
+                {/* Status (especialmente visível na edição) */}
+                {isEdicao && (
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-medium text-slate-300 mb-1">
+                      Status do Monitoramento no Sistema
+                    </label>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value as StatusMonitoramento)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400 font-semibold"
+                    >
+                      <option value="ATIVO">ATIVO (Em cumprimento normal de medida)</option>
+                      <option value="FORAGIDO">FORAGIDO (Rompimento / Evasão confirmada)</option>
+                      <option value="DESLIGADO">DESLIGADO (Extinção de pena ou revogação formal)</option>
+                      <option value="SUSPENSO">SUSPENSO (Suspensão cautelar)</option>
+                    </select>
+                  </div>
+                )}
 
                 {/* Perfil no Sistema */}
                 <div className="sm:col-span-2">
@@ -404,7 +537,7 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
                   type="text"
                   value={comarca}
                   onChange={(e) => setComarca(e.target.value)}
-                  placeholder="Ex: Comarca Central de São Paulo"
+                  placeholder="Ex: Comarca Central"
                   className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
                 />
               </div>
@@ -495,81 +628,138 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
             </div>
           </div>
 
-          {/* Seção 4: Registro da Entrada Inicial no Livro */}
+          {/* Seção 4: Se for NOVO CADASTRO, mostra dados da entrada inicial */}
+          {!isEdicao && (
+            <div className="space-y-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                <Calendar className="w-4 h-4" />
+                4. Registro Formal de Entrada Inicial
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-slate-950/50 p-4 rounded-xl border border-slate-800/80">
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">Data da Entrada</label>
+                  <input
+                    type="date"
+                    required
+                    value={dataEntrada}
+                    onChange={(e) => setDataEntrada(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400 font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">Hora da Entrada</label>
+                  <input
+                    type="time"
+                    required
+                    value={horaEntrada}
+                    onChange={(e) => setHoraEntrada(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400 font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">Motivo da Entrada</label>
+                  <select
+                    value={motivoEntrada}
+                    onChange={(e) => setMotivoEntrada(e.target.value as MotivoEntrada)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400"
+                  >
+                    <option value="INSTALACAO_INICIAL">Instalação Inicial</option>
+                    <option value="MEDIDA_PROTETIVA_CONCEDIDA">Medida Protetiva Concedida</option>
+                    <option value="RETORNO_RECAPTURA">Retorno por Recaptura</option>
+                    <option value="TRANSFERENCIA_ENTRADA">Transferência de Entrada</option>
+                    <option value="SUBSTITUICAO_EQUIPAMENTO">Substituição de Equipamento</option>
+                    <option value="OUTRO">Outro Motivo</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">Responsável Operacional</label>
+                  <input
+                    type="text"
+                    value={responsavelOperacional}
+                    onChange={(e) => setResponsavelOperacional(e.target.value)}
+                    placeholder="Nome / Matrícula"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-medium text-slate-300 mb-1">Nº Mandado ou Ofício Judicial</label>
+                  <input
+                    type="text"
+                    value={numeroOficio}
+                    onChange={(e) => setNumeroOficio(e.target.value)}
+                    placeholder="Ex: MAND-2024/091-VEC"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Endereço e Contato */}
           <div className="space-y-4">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-              <Calendar className="w-4 h-4" />
-              4. Registro Formal de Entrada (Ativação / Início)
+              <MapPin className="w-4 h-4" />
+              {isEdicao ? '4' : '5'}. Endereço Residencial Base & Contatos
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-slate-950/50 p-4 rounded-xl border border-slate-800/80">
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Data da Entrada</label>
-                <input
-                  type="date"
-                  required
-                  value={dataEntrada}
-                  onChange={(e) => setDataEntrada(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400 font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Hora da Entrada</label>
-                <input
-                  type="time"
-                  required
-                  value={horaEntrada}
-                  onChange={(e) => setHoraEntrada(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400 font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Motivo da Entrada</label>
-                <select
-                  value={motivoEntrada}
-                  onChange={(e) => setMotivoEntrada(e.target.value as MotivoEntrada)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400"
-                >
-                  <option value="INSTALACAO_INICIAL">Instalação Inicial</option>
-                  <option value="MEDIDA_PROTETIVA_CONCEDIDA">Medida Protetiva Concedida</option>
-                  <option value="RETORNO_RECAPTURA">Retorno por Recaptura</option>
-                  <option value="TRANSFERENCIA_ENTRADA">Transferência de Entrada</option>
-                  <option value="SUBSTITUICAO_EQUIPAMENTO">Substituição de Equipamento</option>
-                  <option value="OUTRO">Outro Motivo</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Responsável Operacional</label>
-                <input
-                  type="text"
-                  value={responsavelOperacional}
-                  onChange={(e) => setResponsavelOperacional(e.target.value)}
-                  placeholder="Nome / Matrícula"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-medium text-slate-300 mb-1">Nº Mandado ou Ofício Judicial</label>
-                <input
-                  type="text"
-                  value={numeroOficio}
-                  onChange={(e) => setNumeroOficio(e.target.value)}
-                  placeholder="Ex: MAND-2024/091-VEC"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-mono"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-medium text-slate-300 mb-1">Endereço Residencial Base</label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-950/50 p-4 rounded-xl border border-slate-800/80">
+              <div className="sm:col-span-3">
+                <label className="block text-xs font-medium text-slate-300 mb-1">Endereço Residencial</label>
                 <input
                   type="text"
                   value={enderecoResidencial}
                   onChange={(e) => setEnderecoResidencial(e.target.value)}
-                  placeholder="Rua, número, bairro e cidade"
+                  placeholder="Rua, número, complemento e bairro"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Cidade</label>
+                <input
+                  type="text"
+                  value={cidade}
+                  onChange={(e) => setCidade(e.target.value)}
+                  placeholder="Ex: São Paulo"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Estado (UF)</label>
+                <input
+                  type="text"
+                  value={estado}
+                  onChange={(e) => setEstado(e.target.value)}
+                  placeholder="SP"
+                  maxLength={2}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 uppercase font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">Telefone de Contato</label>
+                <input
+                  type="text"
+                  value={telefoneContato}
+                  onChange={(e) => setTelefoneContato(e.target.value)}
+                  placeholder="(00) 00000-0000"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-mono"
+                />
+              </div>
+
+              <div className="sm:col-span-3">
+                <label className="block text-xs font-medium text-slate-300 mb-1">Observações Gerais / Restrições</label>
+                <input
+                  type="text"
+                  value={observacoesGerais}
+                  onChange={(e) => setObservacoesGerais(e.target.value)}
+                  placeholder="Horários de recolhimento, rotas autorizadas, etc."
                   className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
                 />
               </div>
@@ -589,10 +779,14 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
           <button
             type="button"
             onClick={handleSubmit}
-            className="px-5 py-2 text-xs font-semibold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-lg transition-colors shadow-sm flex items-center gap-2"
+            className={`px-5 py-2 text-xs font-semibold rounded-lg transition-colors shadow-sm flex items-center gap-2 ${
+              isEdicao
+                ? 'bg-blue-500 hover:bg-blue-400 text-slate-950'
+                : 'bg-amber-400 hover:bg-amber-300 text-slate-950'
+            }`}
           >
-            <Shield className="w-4 h-4" />
-            <span>Salvar e Efetivar Entrada</span>
+            {isEdicao ? <Edit3 className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
+            <span>{isEdicao ? 'Salvar Alterações Cadastrais' : 'Salvar e Efetivar Entrada'}</span>
           </button>
         </div>
       </div>

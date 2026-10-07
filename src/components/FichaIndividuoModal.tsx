@@ -1,24 +1,30 @@
 import React from 'react';
-import { X, Printer, ArrowUpDown, AlertTriangle, Shield, User, MapPin, Calendar, Clock, FileText, CheckCircle2 } from 'lucide-react';
-import { IndividuoMonitorado } from '../types/monitoring';
+import { X, Printer, ArrowUpDown, AlertTriangle, Shield, User, MapPin, Calendar, Clock, FileText, CheckCircle2, Edit3, Trash2 } from 'lucide-react';
+import { IndividuoMonitorado, MovimentacaoRegistro } from '../types/monitoring';
 import { calcularIdade, obterFaixaEtaria, rotuloFaixaEtaria, formatarDataHora, formatarData, rotuloPerfil, rotuloStatus } from '../utils/ageUtils';
 
 interface FichaIndividuoModalProps {
   isOpen: boolean;
   onClose: () => void;
   individuo: IndividuoMonitorado | null;
+  onEditarCadastro: (individuo: IndividuoMonitorado) => void;
   onRegistrarMovimentacao: (individuoId: string) => void;
+  onEditarMovimentacao: (individuoId: string, mov: MovimentacaoRegistro) => void;
   onRegistrarFuga: (individuoId: string) => void;
   onVerAlertaFuga: (individuo: IndividuoMonitorado) => void;
+  onExcluirCadastro?: (individuoId: string) => void;
 }
 
 export const FichaIndividuoModal: React.FC<FichaIndividuoModalProps> = ({
   isOpen,
   onClose,
   individuo,
+  onEditarCadastro,
   onRegistrarMovimentacao,
+  onEditarMovimentacao,
   onRegistrarFuga,
   onVerAlertaFuga,
+  onExcluirCadastro,
 }) => {
   if (!isOpen || !individuo) return null;
 
@@ -27,6 +33,14 @@ export const FichaIndividuoModal: React.FC<FichaIndividuoModalProps> = ({
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleExcluir = () => {
+    if (!onExcluirCadastro) return;
+    if (confirm(`Tem certeza que deseja excluir o cadastro de ${individuo.nomeCompleto} e todo o seu histórico? Esta ação é irreversível.`)) {
+      onExcluirCadastro(individuo.id);
+      onClose();
+    }
   };
 
   return (
@@ -47,6 +61,14 @@ export const FichaIndividuoModal: React.FC<FichaIndividuoModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => onEditarCadastro(individuo)}
+              className="px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg flex items-center gap-1.5 transition-colors shadow-sm"
+              title="Editar todos os dados deste cadastro"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Editar Cadastro</span>
+            </button>
             <button
               onClick={handlePrint}
               className="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg flex items-center gap-1.5 transition-colors border border-slate-700"
@@ -89,6 +111,13 @@ export const FichaIndividuoModal: React.FC<FichaIndividuoModalProps> = ({
                 </div>
               </div>
               <span className="text-[11px] text-slate-500 font-mono mt-2">ID: {individuo.id}</span>
+              <button
+                onClick={() => onEditarCadastro(individuo)}
+                className="no-print mt-1 text-[11px] text-blue-400 hover:text-blue-300 underline flex items-center gap-1"
+              >
+                <Edit3 className="w-3 h-3" />
+                <span>Alterar foto / dados</span>
+              </button>
             </div>
 
             {/* Informações Principais */}
@@ -168,6 +197,22 @@ export const FichaIndividuoModal: React.FC<FichaIndividuoModalProps> = ({
                   )}
                 </div>
               )}
+
+              {/* Endereço e Contato */}
+              {(individuo.enderecoResidencial || individuo.telefoneContato) && (
+                <div className="p-2.5 bg-slate-900 rounded-lg border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-slate-500 block">Endereço Residencial:</span>
+                    <span>{individuo.enderecoResidencial} {individuo.cidade ? `(${individuo.cidade}/${individuo.estado})` : ''}</span>
+                  </div>
+                  {individuo.telefoneContato && (
+                    <div className="text-right">
+                      <span className="text-[10px] text-slate-500 block">Telefone:</span>
+                      <span className="font-mono text-white">{individuo.telefoneContato}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -206,7 +251,7 @@ export const FichaIndividuoModal: React.FC<FichaIndividuoModalProps> = ({
             </div>
           )}
 
-          {/* Histórico de Movimentações (Livro Eletrônico) */}
+          {/* Histórico de Movimentações (Livro Eletrônico) com EDICAO de Entrada e Saída */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
@@ -253,8 +298,19 @@ export const FichaIndividuoModal: React.FC<FichaIndividuoModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="text-right sm:self-center font-mono text-slate-400 whitespace-nowrap">
-                    {formatarDataHora(mov.dataHora)}
+                  <div className="flex items-center gap-3 sm:self-center">
+                    <div className="font-mono text-slate-400 whitespace-nowrap text-right">
+                      {formatarDataHora(mov.dataHora)}
+                    </div>
+                    {/* Botão de Editar a Entrada ou Saída */}
+                    <button
+                      onClick={() => onEditarMovimentacao(individuo.id, mov)}
+                      title="Editar este registro de entrada ou saída"
+                      className="no-print px-2.5 py-1 text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-blue-300 hover:text-white border border-slate-700 rounded-lg flex items-center gap-1 transition-colors"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      <span>Editar</span>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -265,6 +321,13 @@ export const FichaIndividuoModal: React.FC<FichaIndividuoModalProps> = ({
         {/* Modal Footer no-print */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-slate-800 bg-slate-900/90 no-print">
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => onEditarCadastro(individuo)}
+              className="px-3 py-1.5 text-xs font-semibold text-blue-200 bg-blue-950/80 hover:bg-blue-900 border border-blue-800 rounded-lg transition-colors flex items-center gap-1.5"
+            >
+              <Edit3 className="w-3.5 h-3.5 text-blue-400" />
+              <span>Editar Cadastro</span>
+            </button>
             {individuo.status !== 'FORAGIDO' && individuo.perfil !== 'VITIMA_PROTEGIDA' && (
               <button
                 onClick={() => onRegistrarFuga(individuo.id)}
@@ -283,12 +346,24 @@ export const FichaIndividuoModal: React.FC<FichaIndividuoModalProps> = ({
             </button>
           </div>
 
-          <button
-            onClick={onClose}
-            className="px-4 py-1.5 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-          >
-            Fechar
-          </button>
+          <div className="flex items-center gap-2">
+            {onExcluirCadastro && (
+              <button
+                onClick={handleExcluir}
+                className="px-3 py-1.5 text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-950/40 rounded-lg transition-colors"
+                title="Excluir cadastro permanentemente"
+              >
+                <Trash2 className="w-3.5 h-3.5 inline mr-1" />
+                <span>Excluir</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="px-4 py-1.5 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            >
+              Fechar
+            </button>
+          </div>
         </div>
       </div>
     </div>

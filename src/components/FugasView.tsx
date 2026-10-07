@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, AlertOctagon, MapPin, Calendar, Clock, CheckCircle2, Printer, Search, PlusCircle, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, AlertOctagon, MapPin, Calendar, Clock, CheckCircle2, Printer, Search, PlusCircle, ShieldAlert, FileText } from 'lucide-react';
 import { IndividuoMonitorado, RegistroFuga } from '../types/monitoring';
 import { formatarDataHora, calcularIdade, obterFaixaEtaria, rotuloFaixaEtaria } from '../utils/ageUtils';
 
@@ -8,6 +8,7 @@ interface FugasViewProps {
   onNovaFuga: () => void;
   onVerAlertaFuga: (individuo: IndividuoMonitorado, fuga: RegistroFuga) => void;
   onMarcarRecapturado: (individuoId: string, fugaId: string) => void;
+  onExportarPDF?: () => void;
 }
 
 export const FugasView: React.FC<FugasViewProps> = ({
@@ -15,6 +16,7 @@ export const FugasView: React.FC<FugasViewProps> = ({
   onNovaFuga,
   onVerAlertaFuga,
   onMarcarRecapturado,
+  onExportarPDF,
 }) => {
   const [busca, setBusca] = useState('');
   const [filtroStatus, setFiltroStatus] = useState<'TODOS' | 'FORAGIDO' | 'RECAPTURADO'>('FORAGIDO');
@@ -61,7 +63,17 @@ export const FugasView: React.FC<FugasViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0 no-print">
+        <div className="flex items-center gap-2 shrink-0 no-print flex-wrap">
+          {onExportarPDF && (
+            <button
+              onClick={onExportarPDF}
+              className="px-3.5 py-2 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-red-200 border border-red-800/80 rounded-lg flex items-center gap-2 transition-colors shadow-sm"
+              title="Exportar Lista Oficial de Foragidos em PDF"
+            >
+              <FileText className="w-4 h-4 text-red-400" />
+              <span>Exportar Lista (PDF)</span>
+            </button>
+          )}
           <button
             onClick={onNovaFuga}
             className="px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-500 text-white rounded-lg flex items-center gap-2 transition-colors shadow-lg shadow-red-900/40"

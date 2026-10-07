@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
-import { ArrowUpDown, ArrowDownRight, ArrowUpRight, Search, Printer, Download, Filter, FileText } from 'lucide-react';
-import { IndividuoMonitorado, TipoMovimentacao, PerfilTipo } from '../types/monitoring';
+import { ArrowUpDown, ArrowDownRight, ArrowUpRight, Search, Printer, Download, Filter, FileText, Edit3 } from 'lucide-react';
+import { IndividuoMonitorado, TipoMovimentacao, PerfilTipo, MovimentacaoRegistro } from '../types/monitoring';
 import { formatarDataHora, rotuloPerfil } from '../utils/ageUtils';
 
 interface MovimentacoesViewProps {
   individuos: IndividuoMonitorado[];
   onNovaMovimentacao: () => void;
   onSelecionarIndividuo: (ind: IndividuoMonitorado) => void;
+  onEditarMovimentacao: (individuoId: string, mov: MovimentacaoRegistro) => void;
+  onExportarPDF?: () => void;
 }
 
 export const MovimentacoesView: React.FC<MovimentacoesViewProps> = ({
   individuos,
   onNovaMovimentacao,
   onSelecionarIndividuo,
+  onEditarMovimentacao,
+  onExportarPDF,
 }) => {
   const [tipoFiltro, setTipoFiltro] = useState<'TODOS' | TipoMovimentacao>('TODOS');
   const [perfilFiltro, setPerfilFiltro] = useState<'TODOS' | PerfilTipo>('TODOS');
@@ -83,7 +87,7 @@ export const MovimentacoesView: React.FC<MovimentacoesViewProps> = ({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `livro-movimentacoes-cmep-${Date.now()}.csv`);
+    link.setAttribute('download', `livro-movimentacoes-dme-${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -103,7 +107,17 @@ export const MovimentacoesView: React.FC<MovimentacoesViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 no-print">
+        <div className="flex items-center gap-2 no-print flex-wrap">
+          {onExportarPDF && (
+            <button
+              onClick={onExportarPDF}
+              className="px-3 py-1.5 text-xs font-semibold bg-blue-900/60 hover:bg-blue-800 text-blue-200 border border-blue-700/80 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm"
+              title="Gerar PDF Oficial do Livro de Movimentações"
+            >
+              <FileText className="w-3.5 h-3.5 text-blue-300" />
+              <span>Exportar PDF</span>
+            </button>
+          )}
           <button
             onClick={handleExportCSV}
             className="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg flex items-center gap-1.5 transition-colors"
@@ -280,15 +294,22 @@ export const MovimentacoesView: React.FC<MovimentacoesViewProps> = ({
 
                     {/* Ação */}
                     <td className="py-3 px-4 text-right whitespace-nowrap no-print">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelecionarIndividuo(m.individuo);
-                        }}
-                        className="px-2.5 py-1 text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 transition-colors"
-                      >
-                        Ver Dossiê
-                      </button>
+                      <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => onEditarMovimentacao(m.individuo.id, m)}
+                          title="Editar este registro de entrada ou saída"
+                          className="px-2.5 py-1 text-[11px] font-semibold bg-blue-950/70 hover:bg-blue-900 text-blue-300 rounded border border-blue-800/60 transition-colors flex items-center gap-1"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          <span>Editar</span>
+                        </button>
+                        <button
+                          onClick={() => onSelecionarIndividuo(m.individuo)}
+                          className="px-2.5 py-1 text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 transition-colors"
+                        >
+                          Dossiê
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

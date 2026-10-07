@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, PlusCircle, AlertTriangle, ArrowUpDown, Terminal, Radio } from 'lucide-react';
+import { Shield, PlusCircle, AlertTriangle, ArrowUpDown, Terminal, Radio, FileText } from 'lucide-react';
 
 interface HeaderProps {
   abaAtiva: 'todos' | 'movimentacoes' | 'vitimas_agressores' | 'fugas' | 'faixas_etarias' | 'prompt_mestre';
@@ -7,6 +7,7 @@ interface HeaderProps {
   onNovoCadastro: () => void;
   onNovaMovimentacao: () => void;
   onNovaFuga: () => void;
+  onExportarRelatorio: () => void;
   fugasAtivasCount: number;
 }
 
@@ -16,6 +17,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNovoCadastro,
   onNovaMovimentacao,
   onNovaFuga,
+  onExportarRelatorio,
   fugasAtivasCount,
 }) => {
   return (
@@ -29,9 +31,9 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             <div className="flex flex-col">
               <span className="text-base font-bold tracking-tight text-white flex items-center gap-2">
-                CMEP
+                DME
                 <span className="text-xs font-normal text-slate-400 font-mono tracking-normal">
-                  Monitoramento Eletrônico
+                  Divisão de Monitoramento Eletrônico
                 </span>
               </span>
             </div>
@@ -111,11 +113,20 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Zone 3: Primary Actions */}
           <div className="flex items-center gap-2">
             <button
+              onClick={onExportarRelatorio}
+              title="Exportar Relatório Oficial em PDF (jsPDF)"
+              className="px-3 py-1.5 text-xs font-semibold text-slate-100 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap shadow-sm"
+            >
+              <FileText className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Exportar Relatório (PDF)</span>
+              <span className="sm:hidden">PDF</span>
+            </button>
+            <button
               onClick={onNovaMovimentacao}
               title="Registrar Entrada ou Saída no livro"
               className="px-3 py-1.5 text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
             >
-              <ArrowUpDown className="w-3.5 h-3.5 text-blue-400" />
+              <ArrowUpDown className="w-3.5 h-3.5 text-cyan-400" />
               <span className="hidden sm:inline">Entrada / Saída</span>
             </button>
             <button

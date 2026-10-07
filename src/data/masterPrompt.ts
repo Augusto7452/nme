@@ -1,5 +1,5 @@
 export const MASTER_PROMPT_TEXT = `## PROMPT MESTRE DE ENGENHARIA DE SOFTWARE
-### SISTEMA INTEGRADO DE MONITORAMENTO ELETRÔNICO (CMEP / SIME)
+### SISTEMA INTEGRADO DE MONITORAMENTO ELETRÔNICO (DME - DIVISÃO DE MONITORAMENTO ELETRÔNICO)
 
 Atue como Arquiteto de Software e Desenvolvedor Full-Stack Sênior especializado em sistemas judiciais, segurança pública e telemetria penitenciária. Sua missão é projetar e implementar um Sistema Completo de Monitoramento Eletrônico (Tornozeleira Eletrônica, Botão do Pânico e Central Integrada de Medidas Cautelares).
 
@@ -18,16 +18,18 @@ Construir uma aplicação robusta, segura e institucional para gestão operacion
 
 ### 2. REQUISITOS FUNCIONAIS DETALHADOS
 
-#### MÓDULO 1: GESTÃO DE ENTRADAS E SAÍDAS (LIVRO ELETRÔNICO)
-1. **Registro de Entrada**:
-   - Data e hora precisas da instalação/ativação do dispositivo;
+#### MÓDULO 1: GESTÃO E EDIÇÃO DE ENTRADAS E SAÍDAS (LIVRO ELETRÔNICO)
+1. **Registro e Edição de Entrada**:
+   - Data e hora precisas da instalação/ativação do dispositivo (totalmente editáveis para retificação de lançamentos);
    - Tipo de entrada: Instalação Inicial, Medida Protetiva Concedida, Retorno por Recaptura, Transferência de Comarca, Substituição de Tornozeleira;
    - Número de série da tornozeleira (TX) ou receptor de vítima (RX), IMEI e operadora do chip de dados;
-   - Identificação do agente/operador responsável pela instalação e número do ofício judicial/mandado.
-2. **Registro de Saída**:
-   - Data e hora precisas da desativação/desligamento;
+   - Identificação do agente/operador responsável pela instalação e número do ofício judicial/mandado;
+   - Botão de edição e exclusão de registro com rastreabilidade operacional.
+2. **Registro e Edição de Saída**:
+   - Data e hora precisas da desativação/desligamento (totalmente editáveis);
    - Motivo da saída: Extinção de Pena, Revogação de Medida Cautelar, Fuga / Rompimento de Cinta, Transferência para outra unidade, Regressão de Regime (fechado), Desligamento Voluntário de Vítima, Óbito;
-   - Emissão de Termo de Desligamento / Devolução de Equipamento com checklist do estado do aparelho.
+   - Emissão de Termo de Desligamento / Devolução de Equipamento com checklist do estado do aparelho;
+   - Recursos de retificação de dados da saída diretamente no livro eletrônico.
 
 #### MÓDULO 2: DISTINÇÃO ESTRUTURADA DE PERFIS (VÍTIMAS, AGRESSORES E MONITORADOS)
 1. **Monitorado Geral**:

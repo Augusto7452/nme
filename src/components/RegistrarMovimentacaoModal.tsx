@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
-import { X, ArrowUpDown, ArrowDownRight, ArrowUpRight, Calendar, User, FileText } from 'lucide-react';
-import { IndividuoMonitorado, TipoMovimentacao, MotivoEntrada, MotivoSaida } from '../types/monitoring';
+import React, { useState, useEffect } from 'react';
+import { X, ArrowUpDown, ArrowDownRight, ArrowUpRight, Calendar, User, FileText, Edit3, Trash2 } from 'lucide-react';
+import { IndividuoMonitorado, TipoMovimentacao, MotivoEntrada, MotivoSaida, MovimentacaoRegistro } from '../types/monitoring';
 
 interface RegistrarMovimentacaoModalProps {
   isOpen: boolean;
   onClose: () => void;
   individuos: IndividuoMonitorado[];
   individuoPreSelecionadoId?: string;
+  movimentacaoParaEditar?: {
+    individuoId: string;
+    movimentacao: MovimentacaoRegistro;
+  } | null;
   onSalvarMovimentacao: (
     individuoId: string,
     tipo: TipoMovimentacao,
@@ -19,6 +23,20 @@ interface RegistrarMovimentacaoModalProps {
       observacoes?: string;
     }
   ) => void;
+  onEditarMovimentacao?: (
+    individuoId: string,
+    movimentacaoId: string,
+    tipo: TipoMovimentacao,
+    dados: {
+      dataHora: string;
+      motivo: MotivoEntrada | MotivoSaida;
+      motivoDetalhado: string;
+      responsavelOperacional: string;
+      numeroOficioOuMandado?: string;
+      observacoes?: string;
+    }
+  ) => void;
+  onExcluirMovimentacao?: (individuoId: string, movimentacaoId: string) => void;
 }
 
 export const RegistrarMovimentacaoModal: React.FC<RegistrarMovimentacaoModalProps> = ({
@@ -26,11 +44,16 @@ export const RegistrarMovimentacaoModal: React.FC<RegistrarMovimentacaoModalProp
   onClose,
   individuos,
   individuoPreSelecionadoId,
+  movimentacaoParaEditar,
   onSalvarMovimentacao,
+  onEditarMovimentacao,
+  onExcluirMovimentacao,
 }) => {
   const agora = new Date();
   const dataHojeStr = agora.toISOString().split('T')[0];
   const horaAgoraStr = agora.toTimeString().slice(0, 5);
+
+  const isEdicao = !!movimentacaoParaEditar;
 
   const [individuoId, setIndividuoId] = useState(
     individuoPreSelecionadoId || (individuos.length > 0 ? individuos[0].id : '')
@@ -44,6 +67,44 @@ export const RegistrarMovimentacaoModal: React.FC<RegistrarMovimentacaoModalProp
   const [responsavelOperacional, setResponsavelOperacional] = useState('Agente Policial Penal');
   const [numeroOficio, setNumeroOficio] = useState('');
   const [observacoes, setObservacoes] = useState('');
+
+  useEffect(() => {
+    if (movimentacaoParaEditar) {
+      setIndividuoId(movimentacaoParaEditar.individuoId);
+      setTipo(movimentacaoParaEditar.movimentacao.tipo);
+
+      try {
+        const d = new Date(movimentacaoParaEditar.movimentacao.dataHora);
+        setDataMovimentacao(d.toISOString().split('T')[0]);
+        setHoraMovimentacao(d.toTimeString().slice(0, 5));
+      } catch {
+        setDataMovimentacao(dataHojeStr);
+        setHoraMovimentacao(horaAgoraStr);
+      }
+
+      if (movimentacaoParaEditar.movimentacao.tipo === 'ENTRADA') {
+        setMotivoEntrada(movimentacaoParaEditar.movimentacao.motivo as MotivoEntrada);
+      } else {
+        setMotivoSaida(movimentacaoParaEditar.movimentacao.motivo as MotivoSaida);
+      }
+
+      setMotivoDetalhado(movimentacaoParaEditar.movimentacao.motivoDetalhado || '');
+      setResponsavelOperacional(movimentacaoParaEditar.movimentacao.responsavelOperacional || 'Agente Policial Penal');
+      setNumeroOficio(movimentacaoParaEditar.movimentacao.numeroOficioOuMandado || '');
+      setObservacoes(movimentacaoParaEditar.movimentacao.observacoes || '');
+    } else {
+      setIndividuoId(individuoPreSelecionadoId || (individuos.length > 0 ? individuos[0].id : ''));
+      setTipo('ENTRADA');
+      setDataMovimentacao(dataHojeStr);
+      setHoraMovimentacao(horaAgoraStr);
+      setMotivoEntrada('INSTALACAO_INICIAL');
+      setMotivoSaida('REVOGACAO_MEDIDA');
+      setMotivoDetalhado('');
+      setResponsavelOperacional('Agente Policial Penal');
+      setNumeroOficio('');
+      setObservacoes('');
+    }
+  }, [movimentacaoParaEditar, individuoPreSelecionadoId, isOpen]);
 
   if (!isOpen) return null;
 
@@ -59,16 +120,30 @@ export const RegistrarMovimentacaoModal: React.FC<RegistrarMovimentacaoModalProp
     const dataHoraIso = new Date(`${dataMovimentacao}T${horaMovimentacao}:00`).toISOString();
     const motivoFinal = tipo === 'ENTRADA' ? motivoEntrada : motivoSaida;
 
-    onSalvarMovimentacao(individuoId, tipo, {
+    const dados = {
       dataHora: dataHoraIso,
       motivo: motivoFinal,
       motivoDetalhado: motivoDetalhado || `Registro de ${tipo.toLowerCase()} no sistema de monitoramento eletrônico.`,
       responsavelOperacional,
       numeroOficioOuMandado: numeroOficio,
       observacoes,
-    });
+    };
+
+    if (isEdicao && movimentacaoParaEditar && onEditarMovimentacao) {
+      onEditarMovimentacao(individuoId, movimentacaoParaEditar.movimentacao.id, tipo, dados);
+    } else {
+      onSalvarMovimentacao(individuoId, tipo, dados);
+    }
 
     onClose();
+  };
+
+  const handleExcluir = () => {
+    if (!isEdicao || !movimentacaoParaEditar || !onExcluirMovimentacao) return;
+    if (confirm('Deseja realmente excluir este registro de movimentação do livro eletrônico?')) {
+      onExcluirMovimentacao(individuoId, movimentacaoParaEditar.movimentacao.id);
+      onClose();
+    }
   };
 
   return (
@@ -77,13 +152,19 @@ export const RegistrarMovimentacaoModal: React.FC<RegistrarMovimentacaoModalProp
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
-              <ArrowUpDown className="w-4 h-4" />
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+              isEdicao
+                ? 'bg-blue-500/10 border border-blue-500/30 text-blue-400'
+                : 'bg-amber-500/10 border border-amber-500/30 text-amber-400'
+            }`}>
+              {isEdicao ? <Edit3 className="w-4 h-4" /> : <ArrowUpDown className="w-4 h-4" />}
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">Registro de Entrada / Saída</h2>
+              <h2 className="text-base font-bold text-white">
+                {isEdicao ? 'Editar Registro de Entrada / Saída' : 'Novo Registro de Entrada / Saída'}
+              </h2>
               <p className="text-xs text-slate-400">
-                Lançamento formal no livro eletrônico de movimentações
+                {isEdicao ? 'Alteração de dados de movimentação no livro eletrônico' : 'Lançamento formal no livro eletrônico de movimentações'}
               </p>
             </div>
           </div>
@@ -100,13 +181,14 @@ export const RegistrarMovimentacaoModal: React.FC<RegistrarMovimentacaoModalProp
           {/* Seleção do Indivíduo */}
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1">
-              Selecionar Monitorado ou Vítima Protegida <span className="text-red-400">*</span>
+              Pessoa Monitorada <span className="text-red-400">*</span>
             </label>
             <select
               value={individuoId}
               onChange={(e) => setIndividuoId(e.target.value)}
+              disabled={isEdicao}
               required
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400"
+              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400 disabled:opacity-60"
             >
               {individuos.map((ind) => (
                 <option key={ind.id} value={ind.id}>
@@ -132,7 +214,7 @@ export const RegistrarMovimentacaoModal: React.FC<RegistrarMovimentacaoModalProp
                 <div className="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
                   <span className="font-mono">{individuoSelecionado.cpf}</span>
                   <span>·</span>
-                  <span className="text-amber-400">{individuoSelecionado.tipoPenal}</span>
+                  <span className="text-amber-400 truncate">{individuoSelecionado.tipoPenal}</span>
                 </div>
                 <div className="text-[11px] text-slate-500 font-mono mt-0.5">
                   Disp: {individuoSelecionado.numeroTornozeleiraOuReceptor || 'Sem disp.'} · Status atual: {individuoSelecionado.status}
@@ -285,21 +367,40 @@ export const RegistrarMovimentacaoModal: React.FC<RegistrarMovimentacaoModalProp
           </div>
 
           {/* Footer buttons */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 text-xs font-semibold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-lg transition-colors flex items-center gap-2"
-            >
-              <ArrowUpDown className="w-4 h-4" />
-              <span>Confirmar Lançamento</span>
-            </button>
+          <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+            {isEdicao && onExcluirMovimentacao ? (
+              <button
+                type="button"
+                onClick={handleExcluir}
+                className="px-3 py-2 text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-950/50 rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Excluir Registro</span>
+              </button>
+            ) : (
+              <div />
+            )}
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className={`px-5 py-2 text-xs font-semibold rounded-lg transition-colors flex items-center gap-2 ${
+                  isEdicao
+                    ? 'bg-blue-500 hover:bg-blue-400 text-slate-950'
+                    : 'bg-amber-400 hover:bg-amber-300 text-slate-950'
+                }`}
+              >
+                {isEdicao ? <Edit3 className="w-4 h-4" /> : <ArrowUpDown className="w-4 h-4" />}
+                <span>{isEdicao ? 'Salvar Edição do Registro' : 'Confirmar Lançamento'}</span>
+              </button>
+            </div>
           </div>
         </form>
       </div>

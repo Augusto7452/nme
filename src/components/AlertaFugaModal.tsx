@@ -62,7 +62,7 @@ export const AlertaFugaModal: React.FC<AlertaFugaModalProps> = ({
           {/* Cabeçalho Institucional */}
           <div className="border-b-2 border-red-600 pb-4 text-center">
             <div className="text-xs uppercase tracking-widest text-red-400 font-bold print:text-red-700">
-              SECRETARIA DE ADMINISTRAÇÃO PENITENCIÁRIA · CMEP
+              SECRETARIA DE ADMINISTRAÇÃO PENITENCIÁRIA · DME (DIVISÃO DE MONITORAMENTO ELETRÔNICO)
             </div>
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white print:text-black mt-1">
               COMUNICADO DE EVASÃO & ROMPIMENTO DE TORNOZELEIRA
@@ -194,7 +194,7 @@ export const AlertaFugaModal: React.FC<AlertaFugaModalProps> = ({
           {/* Orientações para a Abordagem */}
           <div className="p-3 bg-red-950/20 border border-red-900/50 rounded-xl text-xs text-red-200 print:text-black">
             <span className="font-bold uppercase block mb-1">Determinação Legal de Captura:</span>
-            Em cumprimento de mandado de prisão por evasão de monitoramento eletrônico, determinação de condução imediata à autoridade policial judiciária de plantão e comunicação urgente à Central de Monitoramento Eletrônico (CMEP).
+            Em cumprimento de mandado de prisão por evasão de monitoramento eletrônico, determinação de condução imediata à autoridade policial judiciária de plantão e comunicação urgente à Divisão de Monitoramento Eletrônico (DME).
           </div>
         </div>
 

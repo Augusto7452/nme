@@ -32,7 +32,7 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
       texto += `\n\n### TELEMETRIA & HARDWARE IOT:
 - Protocolo TCP/MQTT com antenas GNSS (GPS + Glonass) e sinal celular (GSM/LTE/4G);
 - Detecção instantânea de violação de perímetro (Geo-fencing), corte de cinta de fibra ótica e violação mecânica do case;
-- Envio de alertas com latência máxima de 3 segundos para o painel de despacho da CMEP.`;
+- Envio de alertas com latência máxima de 3 segundos para o painel de despacho da DME.`;
     }
     if (incluirAPI) {
       texto += `\n\n### INTEGRAÇÃO COM SISTEMAS EXTERNOS:
@@ -62,7 +62,7 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'prompt-mestre-monitoramento-eletronico-cmep.md';
+    link.download = 'prompt-mestre-monitoramento-eletronico-dme.md';
     link.click();
     URL.revokeObjectURL(url);
   };

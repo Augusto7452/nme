@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Search, Filter, ArrowUpDown, AlertTriangle, User, Download, PlusCircle, Radio, Eye } from 'lucide-react';
+import { Search, Filter, ArrowUpDown, AlertTriangle, User, Download, PlusCircle, Radio, Eye, Edit3 } from 'lucide-react';
 import { IndividuoMonitorado, PerfilTipo, StatusMonitoramento, FaixaEtaria } from '../types/monitoring';
 import { calcularIdade, obterFaixaEtaria, rotuloFaixaEtaria, rotuloPerfil, rotuloStatus, formatarData, formatarDataHora } from '../utils/ageUtils';
 
 interface MonitoradosListViewProps {
   individuos: IndividuoMonitorado[];
   onSelecionarIndividuo: (ind: IndividuoMonitorado) => void;
+  onEditarCadastro: (ind: IndividuoMonitorado) => void;
   onRegistrarMovimentacao: (individuoId: string) => void;
   onRegistrarFuga: (individuoId: string) => void;
   onVerAlertaFuga: (ind: IndividuoMonitorado) => void;
@@ -15,6 +16,7 @@ interface MonitoradosListViewProps {
 export const MonitoradosListView: React.FC<MonitoradosListViewProps> = ({
   individuos,
   onSelecionarIndividuo,
+  onEditarCadastro,
   onRegistrarMovimentacao,
   onRegistrarFuga,
   onVerAlertaFuga,
@@ -93,7 +95,7 @@ export const MonitoradosListView: React.FC<MonitoradosListViewProps> = ({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `base-monitorados-cmep-${Date.now()}.csv`);
+    link.setAttribute('download', `base-monitorados-dme-${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -326,9 +328,16 @@ export const MonitoradosListView: React.FC<MonitoradosListViewProps> = ({
                             <Eye className="w-3.5 h-3.5" />
                           </button>
                           <button
+                            onClick={() => onEditarCadastro(ind)}
+                            title="Editar Cadastro"
+                            className="p-1.5 bg-blue-950/70 hover:bg-blue-900 text-blue-300 rounded-lg border border-blue-800/60 transition-colors"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
                             onClick={() => onRegistrarMovimentacao(ind.id)}
                             title="Registrar Entrada ou Saída"
-                            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-blue-400 rounded-lg border border-slate-700 transition-colors"
+                            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-400 rounded-lg border border-slate-700 transition-colors"
                           >
                             <ArrowUpDown className="w-3.5 h-3.5" />
                           </button>

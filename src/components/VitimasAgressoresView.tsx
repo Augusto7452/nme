@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Shield, ShieldAlert, Users, ArrowUpDown, AlertCircle, PlusCircle, Radio, MapPin } from 'lucide-react';
+import { Shield, ShieldAlert, Users, ArrowUpDown, AlertCircle, PlusCircle, Radio, MapPin, Edit3 } from 'lucide-react';
 import { IndividuoMonitorado } from '../types/monitoring';
 import { formatarDataHora, calcularIdade, rotuloFaixaEtaria, obterFaixaEtaria } from '../utils/ageUtils';
 
 interface VitimasAgressoresViewProps {
   individuos: IndividuoMonitorado[];
   onSelecionarIndividuo: (ind: IndividuoMonitorado) => void;
+  onEditarCadastro: (ind: IndividuoMonitorado) => void;
   onNovoCadastro: () => void;
   onNovaMovimentacao: (individuoId?: string) => void;
 }
@@ -13,6 +14,7 @@ interface VitimasAgressoresViewProps {
 export const VitimasAgressoresView: React.FC<VitimasAgressoresViewProps> = ({
   individuos,
   onSelecionarIndividuo,
+  onEditarCadastro,
   onNovoCadastro,
   onNovaMovimentacao,
 }) => {
@@ -307,15 +309,22 @@ export const VitimasAgressoresView: React.FC<VitimasAgressoresViewProps> = ({
                       </td>
 
                       <td className="py-3 px-3 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onNovaMovimentacao(ind.id);
-                          }}
-                          className="px-2.5 py-1 text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 transition-colors"
-                        >
-                          Lançar Entrada/Saída
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => onEditarCadastro(ind)}
+                            title="Editar Cadastro"
+                            className="px-2 py-1 text-[11px] font-semibold bg-blue-950/70 hover:bg-blue-900 text-blue-300 rounded border border-blue-800/60 transition-colors flex items-center gap-1"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                            <span>Editar</span>
+                          </button>
+                          <button
+                            onClick={() => onNovaMovimentacao(ind.id)}
+                            className="px-2.5 py-1 text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 transition-colors"
+                          >
+                            Entrada/Saída
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
