@@ -1,0 +1,6 @@
+{
+  "name": "CMEP - Sistema de Monitoramento Eletrônico",
+  "description": "Sistema integrado de registro e gestão de entradas, saídas, vítimas protegidas, agressores, tipo penal, processo judicial, faixas etárias e registros de fuga.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
