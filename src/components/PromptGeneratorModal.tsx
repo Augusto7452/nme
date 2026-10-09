@@ -81,10 +81,10 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap w-full sm:w-auto">
           <button
             onClick={handleCopiar}
-            className={`px-4 py-2 text-xs font-semibold rounded-lg flex items-center gap-2 transition-all shadow-md ${
+            className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition-all shadow-md ${
               copiado
                 ? 'bg-emerald-500 text-slate-950'
                 : 'bg-amber-400 hover:bg-amber-300 text-slate-950'
@@ -95,7 +95,7 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
           </button>
           <button
             onClick={handleBaixar}
-            className="px-3.5 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg flex items-center gap-1.5 transition-colors"
+            className="flex-1 sm:flex-initial px-3.5 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg flex items-center justify-center gap-1.5 transition-colors"
           >
             <Download className="w-4 h-4" />
             <span>Baixar .md</span>

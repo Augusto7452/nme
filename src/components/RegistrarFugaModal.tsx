@@ -85,33 +85,33 @@ export const RegistrarFugaModal: React.FC<RegistrarFugaModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-3xl bg-slate-900 border border-red-800/60 rounded-2xl shadow-2xl overflow-hidden my-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-3xl bg-slate-900 border border-red-800/60 rounded-2xl shadow-2xl overflow-hidden my-2 sm:my-6 max-h-[96vh] sm:max-h-[92vh] flex flex-col">
         {/* Header de Alerta Vermelho */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-red-900/60 bg-red-950/40">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-400">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-red-900/60 bg-red-950/40 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-400 shrink-0">
               <AlertTriangle className="w-5 h-5 animate-bounce" />
             </div>
-            <div>
-              <h2 className="text-base font-bold text-red-200">
-                Registro de Ocorrência de Fuga / Rompimento de Tornozeleira
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-base font-bold text-red-200 truncate">
+                Registro de Ocorrência de Fuga / Rompimento
               </h2>
-              <p className="text-xs text-red-300/80">
-                Emissão de alerta de evasão, registro do local, data da fuga e foto para difusão
+              <p className="text-[11px] sm:text-xs text-red-300/80 truncate">
+                Emissão de alerta de evasão, local, data da fuga e foto para difusão
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-1.5 sm:p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors shrink-0 ml-2"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Seleção do Monitorado com Foto em Destaque */}
           <div className="bg-slate-950/60 border border-slate-800 p-4 rounded-xl">
             <label className="block text-xs font-semibold uppercase text-slate-300 mb-2">
@@ -288,17 +288,17 @@ export const RegistrarFugaModal: React.FC<RegistrarFugaModalProps> = ({
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-3 sm:pt-4 border-t border-slate-800 shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors text-center"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-5 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-500 rounded-lg transition-colors shadow-sm flex items-center gap-2"
+              className="w-full sm:w-auto px-5 py-2.5 sm:py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-500 rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2 active:scale-95"
             >
               <AlertTriangle className="w-4 h-4" />
               <span>Registrar Fuga & Emitir Alerta Policial</span>

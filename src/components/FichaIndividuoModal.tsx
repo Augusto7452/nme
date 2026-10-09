@@ -44,41 +44,42 @@ export const FichaIndividuoModal: React.FC<FichaIndividuoModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden my-6 max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden my-2 sm:my-6 max-h-[96vh] sm:max-h-[92vh] flex flex-col">
         {/* Header no-print */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90 no-print">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-800 bg-slate-900/90 shrink-0 no-print">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
               <User className="w-4 h-4" />
             </div>
-            <div>
-              <h2 className="text-base font-bold text-white">Dossiê Individual de Monitoramento</h2>
-              <p className="text-xs text-slate-400">
-                Ficha de identificação penal, processo, equipamento e linha do tempo
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-base font-bold text-white truncate">Dossiê do Monitorado</h2>
+              <p className="text-[11px] sm:text-xs text-slate-400 truncate">
+                Identificação penal, processo, equipamento e linha do tempo
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-2">
             <button
               onClick={() => onEditarCadastro(individuo)}
-              className="px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg flex items-center gap-1.5 transition-colors shadow-sm"
+              className="px-2.5 sm:px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg flex items-center gap-1.5 transition-colors shadow-sm"
               title="Editar todos os dados deste cadastro"
             >
               <Edit3 className="w-3.5 h-3.5" />
-              <span>Editar Cadastro</span>
+              <span className="hidden sm:inline">Editar Cadastro</span>
+              <span className="sm:hidden">Editar</span>
             </button>
             <button
               onClick={handlePrint}
-              className="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg flex items-center gap-1.5 transition-colors border border-slate-700"
+              className="hidden sm:flex px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg items-center gap-1.5 transition-colors border border-slate-700"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>Imprimir Ficha</span>
+              <span>Imprimir</span>
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+              className="p-1.5 sm:p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -86,7 +87,7 @@ export const FichaIndividuoModal: React.FC<FichaIndividuoModalProps> = ({
         </div>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-5 sm:space-y-6">
           {/* Header Card com Foto e Perfil */}
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 bg-slate-950/70 p-5 rounded-2xl border border-slate-800">
             {/* Foto Oficial */}
@@ -319,47 +320,47 @@ export const FichaIndividuoModal: React.FC<FichaIndividuoModalProps> = ({
         </div>
 
         {/* Modal Footer no-print */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-800 bg-slate-900/90 no-print">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 px-4 sm:px-6 py-3.5 sm:py-4 border-t border-slate-800 bg-slate-900/95 shrink-0 no-print">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => onEditarCadastro(individuo)}
-              className="px-3 py-1.5 text-xs font-semibold text-blue-200 bg-blue-950/80 hover:bg-blue-900 border border-blue-800 rounded-lg transition-colors flex items-center gap-1.5"
+              className="flex-1 sm:flex-initial px-3 py-2 text-xs font-semibold text-blue-200 bg-blue-950/80 hover:bg-blue-900 border border-blue-800 rounded-lg transition-colors flex items-center justify-center gap-1.5"
             >
               <Edit3 className="w-3.5 h-3.5 text-blue-400" />
-              <span>Editar Cadastro</span>
+              <span>Editar</span>
             </button>
             {individuo.status !== 'FORAGIDO' && individuo.perfil !== 'VITIMA_PROTEGIDA' && (
               <button
                 onClick={() => onRegistrarFuga(individuo.id)}
-                className="px-3 py-1.5 text-xs font-semibold text-red-200 bg-red-950/80 hover:bg-red-900 border border-red-800 rounded-lg transition-colors flex items-center gap-1.5"
+                className="flex-1 sm:flex-initial px-3 py-2 text-xs font-semibold text-red-200 bg-red-950/80 hover:bg-red-900 border border-red-800 rounded-lg transition-colors flex items-center justify-center gap-1.5"
               >
                 <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-                <span>Registrar Fuga</span>
+                <span>Fuga</span>
               </button>
             )}
             <button
               onClick={() => onRegistrarMovimentacao(individuo.id)}
-              className="px-3 py-1.5 text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5"
+              className="flex-1 sm:flex-initial px-3 py-2 text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors flex items-center justify-center gap-1.5"
             >
-              <ArrowUpDown className="w-3.5 h-3.5 text-blue-400" />
-              <span>Lançar Entrada / Saída</span>
+              <ArrowUpDown className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Entrada / Saída</span>
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-end">
             {onExcluirCadastro && (
               <button
                 onClick={handleExcluir}
-                className="px-3 py-1.5 text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-950/40 rounded-lg transition-colors"
+                className="px-3 py-2 text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-950/40 rounded-lg transition-colors flex items-center gap-1"
                 title="Excluir cadastro permanentemente"
               >
-                <Trash2 className="w-3.5 h-3.5 inline mr-1" />
+                <Trash2 className="w-3.5 h-3.5" />
                 <span>Excluir</span>
               </button>
             )}
             <button
               onClick={onClose}
-              className="px-4 py-1.5 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+              className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-center"
             >
               Fechar
             </button>

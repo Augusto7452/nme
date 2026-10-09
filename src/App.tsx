@@ -17,14 +17,56 @@ import { RegistrarMovimentacaoModal } from './components/RegistrarMovimentacaoMo
 import { RegistrarFugaModal } from './components/RegistrarFugaModal';
 import { FichaIndividuoModal } from './components/FichaIndividuoModal';
 import { AlertaFugaModal } from './components/AlertaFugaModal';
-import { IndividuoMonitorado, TipoMovimentacao, RegistroFuga, MovimentacaoRegistro } from './types/monitoring';
+import { IndividuoMonitorado, TipoMovimentacao, RegistroFuga, MovimentacaoRegistro, UsuarioOperador } from './types/monitoring';
 import { DADOS_INICIAIS_MONITORADOS } from './data/mockData';
 import { gerarRelatorioPDF } from './utils/pdfGenerator';
 import { RotateCcw, FileText } from 'lucide-react';
+import { LoginView } from './components/LoginView';
+import { SupabaseModal } from './components/SupabaseModal';
+import {
+  carregarIndividuosDoSupabase,
+  salvarIndividuoNoSupabase,
+  excluirIndividuoNoSupabase,
+  salvarMovimentacaoNoSupabase,
+  salvarFugaNoSupabase,
+} from './services/supabaseService';
+import { getSupabaseCredentials } from './lib/supabase';
 
 const STORAGE_KEY = 'cmep_monitoramento_dados_v1';
+const SESSION_STORAGE_KEY = 'dme_sessao_usuario_v1';
 
 export default function App() {
+  // Sessão do Operador Autenticado
+  const [usuarioLogado, setUsuarioLogado] = useState<UsuarioOperador | null>(() => {
+    try {
+      const salvo = localStorage.getItem(SESSION_STORAGE_KEY);
+      if (salvo) {
+        return JSON.parse(salvo);
+      }
+    } catch (e) {
+      console.error('Erro ao ler sessão do operador:', e);
+    }
+    return null;
+  });
+
+  const handleLogin = (usuario: UsuarioOperador) => {
+    setUsuarioLogado(usuario);
+    try {
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(usuario));
+    } catch (e) {
+      console.error('Erro ao salvar sessão:', e);
+    }
+  };
+
+  const handleLogout = () => {
+    setUsuarioLogado(null);
+    try {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+    } catch (e) {
+      console.error('Erro ao remover sessão:', e);
+    }
+  };
+
   // Carregar dados salvos no LocalStorage ou usar mock inicial
   const [individuos, setIndividuos] = useState<IndividuoMonitorado[]>(() => {
     try {
@@ -58,6 +100,7 @@ export default function App() {
   // Modais e Estados de Edição
   const [isCadastroOpen, setIsCadastroOpen] = useState(false);
   const [individuoParaEditar, setIndividuoParaEditar] = useState<IndividuoMonitorado | null>(null);
+  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
 
   const [isMovimentacaoOpen, setIsMovimentacaoOpen] = useState(false);
   const [movimentacaoPreId, setMovimentacaoPreId] = useState<string | undefined>();
@@ -82,6 +125,22 @@ export default function App() {
     }
   }, [individuos]);
 
+  // Sincronizar com o banco Supabase na inicialização se configurado
+  useEffect(() => {
+    const creds = getSupabaseCredentials();
+    if (creds.source !== 'none') {
+      carregarIndividuosDoSupabase()
+        .then((res) => {
+          if (res.sucesso && res.dados && res.dados.length > 0) {
+            setIndividuos(res.dados);
+          }
+        })
+        .catch((e) => {
+          console.warn('Aviso: Falha ao sincronizar com Supabase na inicialização:', e);
+        });
+    }
+  }, []);
+
   // Contagem de foragidos ativos para a badge no header
   const foragidosAtivosCount = individuos.filter((i) => i.status === 'FORAGIDO').length;
 
@@ -99,6 +158,11 @@ export default function App() {
       setIndividuoFicha(novoOuAtualizado);
     }
     setIndividuoParaEditar(null);
+
+    // Sincronizar com o Supabase em segundo plano
+    salvarIndividuoNoSupabase(novoOuAtualizado).catch((err) => {
+      console.warn('Aviso Supabase (salvar indivíduo):', err);
+    });
   };
 
   const handleExcluirIndividuo = (individuoId: string) => {
@@ -106,6 +170,11 @@ export default function App() {
     if (individuoFicha && individuoFicha.id === individuoId) {
       setIndividuoFicha(null);
     }
+
+    // Excluir do Supabase em segundo plano
+    excluirIndividuoNoSupabase(individuoId).catch((err) => {
+      console.warn('Aviso Supabase (excluir indivíduo):', err);
+    });
   };
 
   // Registrar Nova Movimentação
@@ -154,6 +223,16 @@ export default function App() {
         };
       })
     );
+
+    // Sincronizar nova movimentação com o Supabase
+    salvarMovimentacaoNoSupabase({
+      id: `mov-${Date.now()}`,
+      individuoId,
+      tipo,
+      ...dados,
+    }).catch((err) => {
+      console.warn('Aviso Supabase (salvar movimentação):', err);
+    });
   };
 
   // Editar Movimentação Existente (Entrada ou Saída)
@@ -278,6 +357,11 @@ export default function App() {
       setAlertaFugaIndividuo(individuoAtualizado);
       setAlertaFugaRegistro(novaFuga);
     }
+
+    // Sincronizar fuga com o Supabase
+    salvarFugaNoSupabase(novaFuga).catch((err) => {
+      console.warn('Aviso Supabase (salvar fuga):', err);
+    });
   };
 
   const handleMarcarRecapturado = (individuoId: string, fugaId: string) => {
@@ -293,6 +377,11 @@ export default function App() {
             : f
         );
 
+        const fugaAlterada = fugasAtualizadas.find((f) => f.id === fugaId);
+        if (fugaAlterada) {
+          salvarFugaNoSupabase(fugaAlterada).catch(console.warn);
+        }
+
         const movRetorno = {
           id: `mov-${Date.now()}`,
           individuoId,
@@ -302,6 +391,8 @@ export default function App() {
           motivoDetalhado: 'Retorno ao sistema após cumprimento de mandado de recaptura.',
           responsavelOperacional: 'Equipe de Plantão DME',
         };
+
+        salvarMovimentacaoNoSupabase(movRetorno).catch(console.warn);
 
         return {
           ...ind,
@@ -324,12 +415,19 @@ export default function App() {
     gerarRelatorioPDF(abaAtiva, individuos);
   };
 
+  // Se o operador não estiver autenticado, exibir a Tela de Login Institucional da DME
+  if (!usuarioLogado) {
+    return <LoginView onLogin={handleLogin} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       {/* Header com 3 Zonas Institucionais */}
       <Header
         abaAtiva={abaAtiva}
         setAbaAtiva={setAbaAtiva}
+        usuarioLogado={usuarioLogado}
+        onLogout={handleLogout}
         onNovoCadastro={() => {
           setIndividuoParaEditar(null);
           setIsCadastroOpen(true);
@@ -344,11 +442,12 @@ export default function App() {
           setIsFugaOpen(true);
         }}
         onExportarRelatorio={handleExportarRelatorio}
+        onAbrirSupabase={() => setIsSupabaseModalOpen(true)}
         fugasAtivasCount={foragidosAtivosCount}
       />
 
       {/* Conteúdo Principal */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Painel de Indicadores Executivos no topo */}
         {abaAtiva !== 'prompt_mestre' && (
           <DashboardStats individuos={individuos} />
@@ -356,15 +455,15 @@ export default function App() {
 
         {/* Barra de Ação Rápida de Exportação de Relatório Oficial com jsPDF */}
         {abaAtiva !== 'prompt_mestre' && (
-          <div className="mb-5 p-3.5 bg-slate-900/80 border border-slate-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+          <div className="mb-4 sm:mb-5 p-3 sm:p-3.5 bg-slate-900/80 border border-slate-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print shadow-sm">
+            <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 mt-0.5 sm:mt-0">
                 <FileText className="w-4 h-4" />
               </div>
-              <div>
-                <div className="text-xs font-bold text-white flex items-center gap-2">
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
                   <span>Exportação de Relatório Oficial (jsPDF)</span>
-                  <span className="text-[10px] font-mono font-semibold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                  <span className="text-[10px] font-mono font-semibold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 truncate">
                     {abaAtiva === 'fugas'
                       ? 'Lista Oficial de Foragidos'
                       : abaAtiva === 'movimentacoes'
@@ -376,15 +475,15 @@ export default function App() {
                       : 'Relação Geral de Monitorados'}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Gera PDF em formato formal (A4 institucional) com cabeçalho da Secretaria/DME, dados tabulados e numeração de páginas.
+                <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1 sm:line-clamp-none">
+                  Gera PDF em formato formal (A4 institucional) com cabeçalho da Secretaria/DME e numeração de páginas.
                 </p>
               </div>
             </div>
 
             <button
               onClick={handleExportarRelatorio}
-              className="px-4 py-2 text-xs font-semibold bg-amber-400 hover:bg-amber-300 text-slate-950 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm shrink-0"
+              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm shrink-0 active:scale-95"
             >
               <FileText className="w-4 h-4" />
               <span>Exportar Relatório (PDF)</span>
@@ -492,19 +591,19 @@ export default function App() {
       </main>
 
       {/* Footer simples e institucional */}
-      <footer className="border-t border-slate-900 bg-slate-950 py-4 px-6 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2 no-print">
-        <div className="flex items-center gap-2">
+      <footer className="border-t border-slate-900 bg-slate-950 py-3.5 sm:py-4 px-4 sm:px-6 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-center sm:text-left no-print">
+        <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
           <span>DME · Divisão de Monitoramento Eletrônico</span>
-          <span>·</span>
-          <span>Resolução CNJ nº 412/2021 & Lei 11.340/2006</span>
+          <span className="hidden sm:inline">·</span>
+          <span className="text-[11px] text-slate-500">Res. CNJ nº 412/21 & Lei 11.340/06</span>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={handleResetDados}
             title="Restaurar dados de demonstração originais"
-            className="text-slate-500 hover:text-slate-300 flex items-center gap-1 transition-colors"
+            className="text-slate-500 hover:text-slate-300 flex items-center gap-1.5 transition-colors text-xs py-1 px-2 rounded-lg hover:bg-slate-900"
           >
-            <RotateCcw className="w-3 h-3" />
+            <RotateCcw className="w-3.5 h-3.5" />
             <span>Restaurar Amostras</span>
           </button>
         </div>
@@ -585,6 +684,14 @@ export default function App() {
         individuo={alertaFugaIndividuo}
         fuga={alertaFugaRegistro}
         onMarcarRecapturado={handleMarcarRecapturado}
+      />
+
+      {/* Modal de Gerenciamento do Banco Supabase & Migrations SQL */}
+      <SupabaseModal
+        isOpen={isSupabaseModalOpen}
+        onClose={() => setIsSupabaseModalOpen(false)}
+        individuosLocais={individuos}
+        onIndividuosAtualizados={(novos) => setIndividuos(novos)}
       />
     </div>
   );

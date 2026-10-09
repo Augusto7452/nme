@@ -105,3 +105,17 @@ export interface FiltrosMonitoramento {
   dataInicio?: string;
   dataFim?: string;
 }
+
+export type PerfilAcesso = 'ADMIN' | 'SUPERVISOR' | 'OPERADOR_PLANTAO' | 'AGENTE_CAMPO';
+
+export interface UsuarioOperador {
+  id: string;
+  nome: string;
+  matricula: string;
+  cargo: string;
+  perfilAcesso: PerfilAcesso;
+  lotacao: string;
+  email?: string;
+  horarioLogin: string;
+}
+

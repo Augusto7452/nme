@@ -250,39 +250,39 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden my-6 max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden my-2 sm:my-6 max-h-[96vh] sm:max-h-[92vh] flex flex-col">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90">
-          <div className="flex items-center gap-2.5">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-800 bg-slate-900/90 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
               isEdicao
                 ? 'bg-blue-500/10 border border-blue-500/30 text-blue-400'
                 : 'bg-amber-400/10 border border-amber-400/30 text-amber-400'
             }`}>
               {isEdicao ? <Edit3 className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
             </div>
-            <div>
-              <h2 className="text-base font-bold text-white">
-                {isEdicao ? 'Editar Cadastro de Pessoa no Monitoramento' : 'Novo Cadastro no Sistema de Monitoramento'}
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-base font-bold text-white truncate">
+                {isEdicao ? 'Editar Cadastro de Pessoa' : 'Novo Cadastro no Sistema'}
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-[11px] sm:text-xs text-slate-400 truncate">
                 {isEdicao
                   ? `Atualização cadastral de: ${individuoParaEditar?.nomeCompleto}`
-                  : 'Registro de pessoa, tipo penal, processo, equipamento e entrada inicial'}
+                  : 'Registro de pessoa, tipo penal, processo, equipamento e entrada'}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-1.5 sm:p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors shrink-0 ml-2"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body / Form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 sm:space-y-6">
           {/* Seção 1: Foto e Identificação Civil */}
           <div className="space-y-4">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
@@ -768,18 +768,18 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
         </form>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-800 bg-slate-900/90">
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 px-4 sm:px-6 py-3.5 sm:py-4 border-t border-slate-800 bg-slate-900/95 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors text-center"
           >
             Cancelar
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className={`px-5 py-2 text-xs font-semibold rounded-lg transition-colors shadow-sm flex items-center gap-2 ${
+            className={`w-full sm:w-auto px-5 py-2.5 sm:py-2 text-xs font-bold rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2 active:scale-95 ${
               isEdicao
                 ? 'bg-blue-500 hover:bg-blue-400 text-slate-950'
                 : 'bg-amber-400 hover:bg-amber-300 text-slate-950'
