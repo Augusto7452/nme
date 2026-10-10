@@ -12,7 +12,7 @@ import {
 } from './ageUtils';
 
 export function gerarRelatorioPDF(
-  abaAtiva: 'todos' | 'movimentacoes' | 'vitimas_agressores' | 'fugas' | 'faixas_etarias' | 'prompt_mestre',
+  abaAtiva: 'todos' | 'movimentacoes' | 'vitimas_agressores' | 'fugas' | 'faixas_etarias',
   individuos: IndividuoMonitorado[],
   filtrosInfo?: string
 ) {

@@ -6,7 +6,6 @@ import {
   Shield,
   AlertTriangle,
   BarChart3,
-  Terminal,
   FileText,
   PlusCircle,
   Menu,
@@ -19,8 +18,8 @@ import {
 import { UsuarioOperador } from '../types/monitoring';
 
 interface HeaderProps {
-  abaAtiva: 'todos' | 'movimentacoes' | 'vitimas_agressores' | 'fugas' | 'faixas_etarias' | 'prompt_mestre';
-  setAbaAtiva: (aba: 'todos' | 'movimentacoes' | 'vitimas_agressores' | 'fugas' | 'faixas_etarias' | 'prompt_mestre') => void;
+  abaAtiva: 'todos' | 'movimentacoes' | 'vitimas_agressores' | 'fugas' | 'faixas_etarias';
+  setAbaAtiva: (aba: 'todos' | 'movimentacoes' | 'vitimas_agressores' | 'fugas' | 'faixas_etarias') => void;
   onNovoCadastro: () => void;
   onNovaMovimentacao: () => void;
   onNovaFuga: () => void;
@@ -78,13 +77,6 @@ export const Header: React.FC<HeaderProps> = ({
       mobileLabel: 'Faixas Etárias',
       icon: BarChart3,
     },
-    {
-      id: 'prompt_mestre' as const,
-      label: 'Prompt Mestre',
-      mobileLabel: 'Prompt',
-      icon: Terminal,
-      isSpecial: true,
-    },
   ];
 
   const handleSelectAba = (id: typeof abaAtiva) => {
@@ -125,8 +117,6 @@ export const Header: React.FC<HeaderProps> = ({
               if (ativa) {
                 if (aba.isDanger) {
                   style = 'bg-red-950/70 text-red-200 border border-red-800/60 shadow-sm';
-                } else if (aba.isSpecial) {
-                  style = 'bg-amber-500/20 text-amber-300 border border-amber-500/30 shadow-sm';
                 } else {
                   style = 'bg-slate-800 text-white shadow-sm border border-slate-700/60';
                 }
@@ -138,7 +128,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => handleSelectAba(aba.id)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 ${style}`}
                 >
-                  <Icon className={`w-3.5 h-3.5 ${aba.isDanger ? 'text-red-400' : aba.isSpecial ? 'text-amber-400' : ''}`} />
+                  <Icon className={`w-3.5 h-3.5 ${aba.isDanger ? 'text-red-400' : ''}`} />
                   <span>{aba.label}</span>
                   {aba.badge !== undefined && aba.badge > 0 && (
                     <span className="px-1.5 py-0.2 text-[10px] font-mono font-bold bg-red-600 text-white rounded-full">
@@ -247,8 +237,6 @@ export const Header: React.FC<HeaderProps> = ({
             if (ativa) {
               if (aba.isDanger) {
                 badgeClass = 'bg-red-950 text-red-200 border-red-700 shadow-sm';
-              } else if (aba.isSpecial) {
-                badgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm';
               } else {
                 badgeClass = 'bg-slate-800 text-white border-slate-600 shadow-sm';
               }
@@ -260,7 +248,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => handleSelectAba(aba.id)}
                 className={`px-3 py-1.5 rounded-lg whitespace-nowrap font-medium flex items-center gap-1.5 border transition-all text-xs shrink-0 active:scale-95 ${badgeClass}`}
               >
-                <Icon className={`w-3.5 h-3.5 shrink-0 ${aba.isDanger ? 'text-red-400' : aba.isSpecial ? 'text-amber-400' : ''}`} />
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${aba.isDanger ? 'text-red-400' : ''}`} />
                 <span>{aba.mobileLabel}</span>
                 {aba.badge !== undefined && aba.badge > 0 && (
                   <span className="px-1.5 py-0.2 text-[10px] font-mono font-bold bg-red-600 text-white rounded-full">

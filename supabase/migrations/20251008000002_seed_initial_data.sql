@@ -132,7 +132,7 @@ INSERT INTO public.movimentacoes (
     tipo,
     data_hora,
     motivo,
-    motivoDetalhado,
+    motivo_detalhado,
     responsavel_operacional,
     numero_oficio_ou_mandado,
     observacoes

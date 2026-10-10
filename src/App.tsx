@@ -11,7 +11,6 @@ import { MovimentacoesView } from './components/MovimentacoesView';
 import { VitimasAgressoresView } from './components/VitimasAgressoresView';
 import { FugasView } from './components/FugasView';
 import { DemographicsView } from './components/DemographicsView';
-import { PromptGeneratorModal } from './components/PromptGeneratorModal';
 import { CadastrarIndividuoModal } from './components/CadastrarIndividuoModal';
 import { RegistrarMovimentacaoModal } from './components/RegistrarMovimentacaoModal';
 import { RegistrarFugaModal } from './components/RegistrarFugaModal';
@@ -36,34 +35,20 @@ const STORAGE_KEY = 'cmep_monitoramento_dados_v1';
 const SESSION_STORAGE_KEY = 'dme_sessao_usuario_v1';
 
 export default function App() {
-  // Sessão do Operador Autenticado
-  const [usuarioLogado, setUsuarioLogado] = useState<UsuarioOperador | null>(() => {
-    try {
-      const salvo = localStorage.getItem(SESSION_STORAGE_KEY);
-      if (salvo) {
-        return JSON.parse(salvo);
-      }
-    } catch (e) {
-      console.error('Erro ao ler sessão do operador:', e);
-    }
-    return null;
-  });
+  // Sessão do Operador Autenticado (Sem login automático: sempre exige credenciais na inicialização)
+  const [usuarioLogado, setUsuarioLogado] = useState<UsuarioOperador | null>(null);
 
   const handleLogin = (usuario: UsuarioOperador) => {
     setUsuarioLogado(usuario);
-    try {
-      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(usuario));
-    } catch (e) {
-      console.error('Erro ao salvar sessão:', e);
-    }
   };
 
   const handleLogout = () => {
     setUsuarioLogado(null);
     try {
       localStorage.removeItem(SESSION_STORAGE_KEY);
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
     } catch (e) {
-      console.error('Erro ao remover sessão:', e);
+      console.error('Erro ao encerrar sessão:', e);
     }
   };
 
@@ -94,7 +79,7 @@ export default function App() {
 
   // Navegação de abas
   const [abaAtiva, setAbaAtiva] = useState<
-    'todos' | 'movimentacoes' | 'vitimas_agressores' | 'fugas' | 'faixas_etarias' | 'prompt_mestre'
+    'todos' | 'movimentacoes' | 'vitimas_agressores' | 'fugas' | 'faixas_etarias'
   >('todos');
 
   // Modais e Estados de Edição
@@ -417,7 +402,20 @@ export default function App() {
 
   // Se o operador não estiver autenticado, exibir a Tela de Login Institucional da DME
   if (!usuarioLogado) {
-    return <LoginView onLogin={handleLogin} />;
+    return (
+      <>
+        <LoginView
+          onLogin={handleLogin}
+          onAbrirModalSupabase={() => setIsSupabaseModalOpen(true)}
+        />
+        <SupabaseModal
+          isOpen={isSupabaseModalOpen}
+          onClose={() => setIsSupabaseModalOpen(false)}
+          individuosLocais={individuos}
+          onIndividuosAtualizados={(novosDados: IndividuoMonitorado[]) => setIndividuos(novosDados)}
+        />
+      </>
+    );
   }
 
   return (
@@ -449,47 +447,43 @@ export default function App() {
       {/* Conteúdo Principal */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Painel de Indicadores Executivos no topo */}
-        {abaAtiva !== 'prompt_mestre' && (
-          <DashboardStats individuos={individuos} />
-        )}
+        <DashboardStats individuos={individuos} />
 
         {/* Barra de Ação Rápida de Exportação de Relatório Oficial com jsPDF */}
-        {abaAtiva !== 'prompt_mestre' && (
-          <div className="mb-4 sm:mb-5 p-3 sm:p-3.5 bg-slate-900/80 border border-slate-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print shadow-sm">
-            <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 mt-0.5 sm:mt-0">
-                <FileText className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
-                  <span>Exportação de Relatório Oficial (jsPDF)</span>
-                  <span className="text-[10px] font-mono font-semibold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 truncate">
-                    {abaAtiva === 'fugas'
-                      ? 'Lista Oficial de Foragidos'
-                      : abaAtiva === 'movimentacoes'
-                      ? 'Livro de Entradas & Saídas'
-                      : abaAtiva === 'vitimas_agressores'
-                      ? 'Proteção à Mulher (Maria da Penha)'
-                      : abaAtiva === 'faixas_etarias'
-                      ? 'Estatísticas por Faixa Etária'
-                      : 'Relação Geral de Monitorados'}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1 sm:line-clamp-none">
-                  Gera PDF em formato formal (A4 institucional) com cabeçalho da Secretaria/DME e numeração de páginas.
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={handleExportarRelatorio}
-              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm shrink-0 active:scale-95"
-            >
+        <div className="mb-4 sm:mb-5 p-3 sm:p-3.5 bg-slate-900/80 border border-slate-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print shadow-sm">
+          <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 mt-0.5 sm:mt-0">
               <FileText className="w-4 h-4" />
-              <span>Exportar Relatório (PDF)</span>
-            </button>
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
+                <span>Exportação de Relatório Oficial (jsPDF)</span>
+                <span className="text-[10px] font-mono font-semibold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 truncate">
+                  {abaAtiva === 'fugas'
+                    ? 'Lista Oficial de Foragidos'
+                    : abaAtiva === 'movimentacoes'
+                    ? 'Livro de Entradas & Saídas'
+                    : abaAtiva === 'vitimas_agressores'
+                    ? 'Proteção à Mulher (Maria da Penha)'
+                    : abaAtiva === 'faixas_etarias'
+                    ? 'Estatísticas por Faixa Etária'
+                    : 'Relação Geral de Monitorados'}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1 sm:line-clamp-none">
+                Gera PDF em formato formal (A4 institucional) com cabeçalho da Secretaria/DME e numeração de páginas.
+              </p>
+            </div>
           </div>
-        )}
+
+          <button
+            onClick={handleExportarRelatorio}
+            className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm shrink-0 active:scale-95"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Exportar Relatório (PDF)</span>
+          </button>
+        </div>
 
         {/* Aba 1: Monitorados Geral */}
         {abaAtiva === 'todos' && (
@@ -582,11 +576,6 @@ export default function App() {
             individuos={individuos}
             onSelecionarIndividuo={(ind) => setIndividuoFicha(ind)}
           />
-        )}
-
-        {/* Aba 6: Prompt Mestre */}
-        {abaAtiva === 'prompt_mestre' && (
-          <PromptGeneratorModal inline />
         )}
       </main>
 
