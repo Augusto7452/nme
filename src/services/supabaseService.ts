@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '../lib/supabase';
+import { getSupabaseClient, getSupabaseAdminClient } from '../lib/supabase';
 import { IndividuoMonitorado, MovimentacaoRegistro, RegistroFuga, UsuarioOperador } from '../types/monitoring';
 
 // Interface do banco de dados (snake_case)
@@ -422,7 +422,8 @@ export async function buscarOperadoresDoSupabase(): Promise<{
 }
 
 /**
- * Autentica um operador diretamente consultando a tabela `usuarios_operadores` no Supabase
+ * Autentica um operador utilizando sua senha individual registrada no Supabase.
+ * Sem senha padrão: valida a senha exclusiva do operador contra o Supabase Auth.
  */
 export async function autenticarOperadorNoSupabase(
   identificador: string,
@@ -431,133 +432,148 @@ export async function autenticarOperadorNoSupabase(
 ): Promise<{
   sucesso: boolean;
   usuario?: UsuarioOperador;
-  origem: 'supabase' | 'fallback';
   mensagem: string;
   latenciaMs?: number;
 }> {
   const inicio = performance.now();
   const client = getSupabaseClient();
+  const adminClient = getSupabaseAdminClient();
 
   if (!client) {
     return {
       sucesso: false,
-      origem: 'fallback',
-      mensagem: 'Cliente Supabase não configurado ou desconectado.',
+      mensagem: 'Sistema Supabase não configurado ou desconectado.',
     };
   }
 
   const termo = identificador.trim();
+  const pass = (senha || '').trim();
+
   if (!termo) {
     return {
       sucesso: false,
-      origem: 'supabase',
-      mensagem: 'Informe a matrícula institucional ou e-mail do operador.',
+      mensagem: 'Informe sua matrícula institucional ou e-mail de acesso.',
     };
   }
 
-  // Validação de senha de acesso institucional
-  if (senha !== undefined) {
-    const senhaTrim = senha.trim();
-    if (!senhaTrim) {
-      return {
-        sucesso: false,
-        origem: 'supabase',
-        mensagem: 'A senha institucional é obrigatória para autenticação.',
-      };
-    }
-    const senhasValidas = ['dme@2026', 'admin', 'admin123', '123456', 'dme2026', 'operador2026'];
-    if (!senhasValidas.includes(senhaTrim)) {
-      return {
-        sucesso: false,
-        origem: 'supabase',
-        mensagem: 'Senha incorreta para o operador informado. A senha padrão institucional é dme@2026.',
-        latenciaMs: 35,
-      };
-    }
+  if (!pass) {
+    return {
+      sucesso: false,
+      mensagem: 'Informe sua senha individual de segurança.',
+    };
   }
 
   try {
-    // 1. Busca exata por matrícula
-    let { data, error } = await client
-      .from('usuarios_operadores')
-      .select('*')
-      .ilike('matricula', termo);
+    // 1. Identificar o e-mail cadastrado
+    let targetEmail = termo.toLowerCase();
+    let opData: UsuarioOperadorDB | null = null;
 
-    // 2. Se não encontrar, tenta por email
-    if ((!data || data.length === 0) && !error) {
-      const resEmail = await client
+    if (!termo.includes('@')) {
+      // Buscar pelo campo matrícula na tabela usuarios_operadores
+      const { data } = await client
         .from('usuarios_operadores')
         .select('*')
-        .ilike('email', termo);
-      if (!resEmail.error && resEmail.data && resEmail.data.length > 0) {
-        data = resEmail.data;
+        .ilike('matricula', termo)
+        .maybeSingle();
+
+      if (data) {
+        opData = data as UsuarioOperadorDB;
+        targetEmail = data.email?.trim().toLowerCase() || `${termo.toLowerCase()}@dme.seguranca.gov.br`;
+      } else {
+        targetEmail = `${termo.toLowerCase()}@dme.seguranca.gov.br`;
+      }
+    } else {
+      const { data } = await client
+        .from('usuarios_operadores')
+        .select('*')
+        .ilike('email', targetEmail)
+        .maybeSingle();
+      if (data) {
+        opData = data as UsuarioOperadorDB;
       }
     }
 
-    // 3. Se não encontrar, tenta por nome aproximado
-    if ((!data || data.length === 0) && !error) {
-      const resNome = await client
-        .from('usuarios_operadores')
-        .select('*')
-        .ilike('nome', `%${termo}%`);
-      if (!resNome.error && resNome.data && resNome.data.length > 0) {
-        data = resNome.data;
+    // 2. Autenticação criptográfica no Supabase Auth
+    let authRes = await client.auth.signInWithPassword({
+      email: targetEmail,
+      password: pass,
+    });
+
+    // Se o erro for de email não confirmado, auto-confirmar pelo admin
+    if (authRes.error && authRes.error.message.toLowerCase().includes('email not confirmed') && adminClient) {
+      try {
+        const { data: listU } = await adminClient.auth.admin.listUsers();
+        const found = listU?.users?.find((u) => u.email?.toLowerCase() === targetEmail);
+        if (found) {
+          await adminClient.auth.admin.updateUserById(found.id, { email_confirm: true });
+          authRes = await client.auth.signInWithPassword({
+            email: targetEmail,
+            password: pass,
+          });
+        }
+      } catch (e) {
+        console.warn('Erro ao auto-confirmar:', e);
       }
     }
 
-    const fim = performance.now();
-    const latenciaMs = Math.round(fim - inicio);
+    const latenciaMs = Math.round(performance.now() - inicio);
 
-    if (error) {
+    if (authRes.error) {
+      // Se não autenticou no Auth, verificar se existe na tabela usuarios_operadores sem senha definida no Auth
+      if (opData) {
+        return {
+          sucesso: false,
+          mensagem: 'Senha incorreta para esta credencial. Caso tenha esquecido ou ainda não tenha cadastrado sua senha individual, utilize a aba "Cadastrar Novo Operador".',
+          latenciaMs,
+        };
+      }
+
       return {
         sucesso: false,
-        origem: 'supabase',
-        mensagem: `Erro na consulta ao banco Supabase: ${error.message}`,
+        mensagem: 'Credenciais inválidas. Verifique os dados digitados ou realize seu cadastro.',
         latenciaMs,
       };
     }
 
-    if (data && data.length > 0) {
-      const op = data[0] as UsuarioOperadorDB;
-      const usuarioLogado: UsuarioOperador = {
-        id: op.id,
-        nome: op.nome,
-        matricula: op.matricula,
-        cargo: op.cargo,
-        perfilAcesso: op.perfil_acesso,
-        lotacao: lotacaoInformada || op.lotacao,
-        email: op.email,
-        horarioLogin: new Date().toISOString(),
-      };
-
+    if (!authRes.data?.user) {
       return {
-        sucesso: true,
-        usuario: usuarioLogado,
-        origem: 'supabase',
-        mensagem: `Autenticado com sucesso via Supabase! Operador identificado: ${op.nome} (${op.matricula}).`,
+        sucesso: false,
+        mensagem: 'Não foi possível validar o usuário.',
         latenciaMs,
       };
     }
+
+    // 3. Montar perfil do operador autenticado
+    const meta = authRes.data.user.user_metadata || {};
+    const usuarioLogado: UsuarioOperador = {
+      id: opData?.id || authRes.data.user.id,
+      nome: opData?.nome || meta.nome || 'Operador DME',
+      matricula: opData?.matricula || meta.matricula || termo.toUpperCase(),
+      cargo: opData?.cargo || meta.cargo || 'Policial Penal / Operador',
+      perfilAcesso: (opData?.perfil_acesso as any) || meta.perfil_acesso || 'OPERADOR_PLANTAO',
+      lotacao: lotacaoInformada || opData?.lotacao || meta.lotacao || 'Central de Monitoramento DME 24h',
+      email: opData?.email || authRes.data.user.email,
+      horarioLogin: new Date().toISOString(),
+    };
 
     return {
-      sucesso: false,
-      origem: 'supabase',
-      mensagem: `Nenhum operador encontrado no banco Supabase com a identificação "${termo}".`,
+      sucesso: true,
+      usuario: usuarioLogado,
+      mensagem: `Autenticado com sucesso! Bem-vindo(a), ${usuarioLogado.nome}.`,
       latenciaMs,
     };
   } catch (err: any) {
-    const fim = performance.now();
     return {
       sucesso: false,
-      origem: 'supabase',
-      mensagem: `Falha na requisição ao Supabase: ${err.message || String(err)}`,
-      latenciaMs: Math.round(fim - inicio),
+      mensagem: `Falha na autenticação: ${err.message || String(err)}`,
+      latenciaMs: Math.round(performance.now() - inicio),
     };
   }
 }
 
 /**
- * Cadastra um novo operador diretamente na tabela `usuarios_operadores` no Supabase
+ * Cadastra um novo operador diretamente no banco de dados e no Supabase Auth com sua senha individual.
+ * Sem senha padrão: a senha definida pelo usuário é gravada com segurança no banco.
  */
 export async function cadastrarOperadorNoSupabase(operador: {
   nome: string;
@@ -565,40 +581,104 @@ export async function cadastrarOperadorNoSupabase(operador: {
   cargo: string;
   perfilAcesso: 'ADMIN' | 'SUPERVISOR' | 'OPERADOR_PLANTAO' | 'AGENTE_CAMPO';
   lotacao: string;
-  email?: string;
+  email: string;
+  senha: string;
 }): Promise<{ sucesso: boolean; operador?: UsuarioOperador; erro?: string }> {
   const client = getSupabaseClient();
-  if (!client) return { sucesso: false, erro: 'Supabase não configurado' };
+  const adminClient = getSupabaseAdminClient();
+  if (!client) return { sucesso: false, erro: 'Supabase não configurado ou desconectado.' };
+
+  const nome = operador.nome.trim();
+  const matricula = operador.matricula.trim().toUpperCase();
+  const email = operador.email.trim().toLowerCase();
+  const cargo = operador.cargo.trim();
+  const perfilAcesso = operador.perfilAcesso;
+  const lotacao = operador.lotacao.trim();
+  const senha = operador.senha.trim();
+
+  if (!nome || !matricula || !email || !senha) {
+    return { sucesso: false, erro: 'Nome, matrícula, e-mail e senha individual são obrigatórios.' };
+  }
+
+  if (senha.length < 6) {
+    return { sucesso: false, erro: 'A senha de segurança deve conter no mínimo 6 caracteres.' };
+  }
 
   try {
+    // 1. Gravar/Atualizar credencial individual no Supabase Auth
+    if (adminClient) {
+      const { data: listU } = await adminClient.auth.admin.listUsers();
+      const existingUser = listU?.users?.find((u) => u.email?.toLowerCase() === email);
+
+      if (existingUser) {
+        const { error: updErr } = await adminClient.auth.admin.updateUserById(existingUser.id, {
+          password: senha,
+          email_confirm: true,
+          user_metadata: { nome, matricula, cargo, perfil_acesso: perfilAcesso, lotacao },
+        });
+        if (updErr) {
+          return { sucesso: false, erro: `Falha ao atualizar credencial no banco: ${updErr.message}` };
+        }
+      } else {
+        const { error: createErr } = await adminClient.auth.admin.createUser({
+          email,
+          password: senha,
+          email_confirm: true,
+          user_metadata: { nome, matricula, cargo, perfil_acesso: perfilAcesso, lotacao },
+        });
+        if (createErr) {
+          return { sucesso: false, erro: `Falha ao registrar autenticação no banco: ${createErr.message}` };
+        }
+      }
+    } else {
+      const { error: signErr } = await client.auth.signUp({
+        email,
+        password: senha,
+        options: {
+          data: { nome, matricula, cargo, perfil_acesso: perfilAcesso, lotacao },
+        },
+      });
+      if (signErr) {
+        return { sucesso: false, erro: signErr.message };
+      }
+    }
+
+    // 2. Gravar/Atualizar perfil na tabela usuarios_operadores
+    const { data: existingRow } = await client
+      .from('usuarios_operadores')
+      .select('id')
+      .or(`matricula.ilike.${matricula},email.ilike.${email}`)
+      .maybeSingle();
+
+    const recordId = existingRow?.id || `usr-${Date.now().toString().slice(-6)}`;
+
     const payload: Partial<UsuarioOperadorDB> = {
-      id: `usr-${Date.now().toString().slice(-6)}`,
-      nome: operador.nome.trim(),
-      matricula: operador.matricula.trim().toUpperCase(),
-      cargo: operador.cargo.trim(),
-      perfil_acesso: operador.perfilAcesso,
-      lotacao: operador.lotacao.trim(),
-      email: operador.email?.trim() || `${operador.matricula.toLowerCase()}@dme.seguranca.gov.br`,
+      id: recordId,
+      nome,
+      matricula,
+      cargo,
+      perfil_acesso: perfilAcesso,
+      lotacao,
+      email,
+      updated_at: new Date().toISOString(),
     };
 
-    const { data, error } = await client
-      .from('usuarios_operadores')
-      .insert(payload)
-      .select()
-      .single();
-
-    if (error) {
-      return { sucesso: false, erro: error.message };
+    if (existingRow) {
+      const { error: errUpd } = await client.from('usuarios_operadores').update(payload).eq('id', existingRow.id);
+      if (errUpd) return { sucesso: false, erro: errUpd.message };
+    } else {
+      const { error: errIns } = await client.from('usuarios_operadores').insert(payload);
+      if (errIns) return { sucesso: false, erro: errIns.message };
     }
 
     const novoOp: UsuarioOperador = {
-      id: data.id,
-      nome: data.nome,
-      matricula: data.matricula,
-      cargo: data.cargo,
-      perfilAcesso: data.perfil_acesso,
-      lotacao: data.lotacao,
-      email: data.email,
+      id: recordId,
+      nome,
+      matricula,
+      cargo,
+      perfilAcesso,
+      lotacao,
+      email,
       horarioLogin: new Date().toISOString(),
     };
 

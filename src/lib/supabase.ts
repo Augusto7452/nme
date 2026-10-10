@@ -85,6 +85,32 @@ export function getSupabaseClient(): SupabaseClient | null {
   }
 }
 
+let cachedAdminClient: SupabaseClient | null = null;
+
+/**
+ * Obtém o cliente com privilégios administrativos para gestão de contas e auth do sistema.
+ */
+export function getSupabaseAdminClient(): SupabaseClient | null {
+  const { url } = getSupabaseCredentials();
+  const secKey = (import.meta.env.VITE_SUPABASE_SECRET_KEY || '').trim();
+  if (!url || !secKey) return null;
+
+  if (cachedAdminClient) return cachedAdminClient;
+
+  try {
+    cachedAdminClient = createClient(url, secKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+    return cachedAdminClient;
+  } catch (error) {
+    console.error('Erro ao inicializar cliente administrativo Supabase:', error);
+    return null;
+  }
+}
+
 /**
  * Salva credenciais customizadas informadas pelo operador
  */
