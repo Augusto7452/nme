@@ -94,6 +94,9 @@ export interface IndividuoMonitorado {
   telefoneContato: string;
   contatoEmergencia?: string;
   observacoesGerais?: string;
+
+  // Controle de Sincronização e Versão
+  updatedAt?: string;
 }
 
 export interface FiltrosMonitoramento {

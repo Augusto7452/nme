@@ -29,11 +29,47 @@ import {
   excluirIndividuoNoSupabase,
   salvarMovimentacaoNoSupabase,
   salvarFugaNoSupabase,
+  mesclarIndividuos,
 } from './services/supabaseService';
 import { getSupabaseCredentials } from './lib/supabase';
 
-const STORAGE_KEY = 'cmep_monitoramento_dados_v1';
+const STORAGE_KEYS = [
+  'cmep_monitoramento_dados_v1',
+  'cmep_monitoramento_dados_v1_backup',
+  'dme_monitorados_permanente_v2',
+  'dme_backup_redundante_v2',
+];
+
 const SESSION_STORAGE_KEY = 'dme_sessao_usuario_v1';
+
+function carregarDadosLocais(): IndividuoMonitorado[] {
+  for (const key of STORAGE_KEYS) {
+    try {
+      const salvo = localStorage.getItem(key);
+      if (salvo) {
+        const parsed = JSON.parse(salvo);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Aviso ao ler chave ' + key, e);
+    }
+  }
+  return DADOS_INICIAIS_MONITORADOS;
+}
+
+function salvarDadosLocais(dados: IndividuoMonitorado[]) {
+  if (!dados || dados.length === 0) return;
+  try {
+    const json = JSON.stringify(dados);
+    for (const key of STORAGE_KEYS) {
+      localStorage.setItem(key, json);
+    }
+  } catch (e) {
+    console.warn('Erro ao salvar no storage local:', e);
+  }
+}
 
 export default function App() {
   // Sessão do Operador Autenticado (Sem login automático: sempre exige credenciais na inicialização)
@@ -53,28 +89,13 @@ export default function App() {
     }
   };
 
-  // Carregar dados salvos no LocalStorage ou usar mock inicial
-  const [individuos, setIndividuos] = useState<IndividuoMonitorado[]>(() => {
-    try {
-      const salvo = localStorage.getItem(STORAGE_KEY);
-      if (salvo) {
-        const parsed = JSON.parse(salvo);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-    } catch (e) {
-      console.error('Erro ao ler localStorage:', e);
-    }
-    return DADOS_INICIAIS_MONITORADOS;
-  });
+  // Carregar dados salvos no LocalStorage, no backup ou usar mock inicial
+  const [individuos, setIndividuos] = useState<IndividuoMonitorado[]>(() => carregarDadosLocais());
 
-  // Salvar no LocalStorage sempre que alterar
+  // Salvar no LocalStorage e backups redundantes sempre que o estado mudar
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(individuos));
-    } catch (e) {
-      console.error('Erro ao salvar no localStorage:', e);
+    if (individuos && individuos.length > 0) {
+      salvarDadosLocais(individuos);
     }
   }, [individuos]);
 
@@ -126,18 +147,45 @@ export default function App() {
     }
   }, [individuos]);
 
-  // Sincronizar com o banco Supabase na inicialização se configurado
+  // Sincronizar com o banco Supabase na inicialização com fusão inteligente (NUNCA descarta registros locais ou edições)
   useEffect(() => {
     const creds = getSupabaseCredentials();
     if (creds.source !== 'none') {
       carregarIndividuosDoSupabase()
         .then((res) => {
           if (res.sucesso && res.dados && res.dados.length > 0) {
-            setIndividuos(res.dados);
+            setIndividuos((locaisAtuais) => {
+              const dadosBanco = res.dados || [];
+              const mesclados = mesclarIndividuos(locaisAtuais, dadosBanco);
+
+              // Salvar localmente de imediato
+              salvarDadosLocais(mesclados);
+
+              // Sincronizar de volta para o Supabase quaisquer registros que só estavam locais
+              // ou cujas alterações locais sejam mais recentes
+              const bancoMap = new Map(dadosBanco.map((b) => [b.id, b]));
+              const pendentes = mesclados.filter((m) => {
+                const noBanco = bancoMap.get(m.id);
+                if (!noBanco) return true;
+                const tempoLocal = m.updatedAt ? new Date(m.updatedAt).getTime() : 0;
+                const tempoBanco = noBanco.updatedAt ? new Date(noBanco.updatedAt).getTime() : 0;
+                return tempoLocal > tempoBanco;
+              });
+
+              if (pendentes.length > 0) {
+                pendentes.forEach((ind) => {
+                  salvarIndividuoNoSupabase(ind).catch((err) => {
+                    console.warn('Aviso sincronizando com Supabase:', err);
+                  });
+                });
+              }
+
+              return mesclados;
+            });
           }
         })
         .catch((e) => {
-          console.warn('Aviso: Falha ao sincronizar com Supabase na inicialização:', e);
+          console.warn('Aviso: Falha ao carregar do Supabase:', e);
         });
     }
   }, []);
@@ -145,20 +193,30 @@ export default function App() {
   // Contagem de foragidos ativos para a badge no header
   const foragidosAtivosCount = individuos.filter((i) => i.status === 'FORAGIDO').length;
 
-  // Ações de persistência: Criar ou Editar Cadastro de Indivíduo
-  const handleSalvarIndividuo = (novoOuAtualizado: IndividuoMonitorado) => {
+  // Ações de persistência: Criar ou Editar Cadastro de Indivíduo com garantia total de não perda de dados
+  const handleSalvarIndividuo = async (novoOuAtualizado: IndividuoMonitorado) => {
     const isEdicao = individuos.some((i) => i.id === novoOuAtualizado.id);
 
+    const indFinal: IndividuoMonitorado = {
+      ...novoOuAtualizado,
+      updatedAt: new Date().toISOString(),
+    };
+
     setIndividuos((prev) => {
-      const existe = prev.some((i) => i.id === novoOuAtualizado.id);
+      const existe = prev.some((i) => i.id === indFinal.id);
+      let atualizados: IndividuoMonitorado[];
       if (existe) {
-        return prev.map((i) => (i.id === novoOuAtualizado.id ? novoOuAtualizado : i));
+        atualizados = prev.map((i) => (i.id === indFinal.id ? indFinal : i));
+      } else {
+        atualizados = [indFinal, ...prev];
       }
-      return [novoOuAtualizado, ...prev];
+
+      salvarDadosLocais(atualizados);
+      return atualizados;
     });
 
-    if (individuoFicha && individuoFicha.id === novoOuAtualizado.id) {
-      setIndividuoFicha(novoOuAtualizado);
+    if (individuoFicha && individuoFicha.id === indFinal.id) {
+      setIndividuoFicha(indFinal);
     }
     setIndividuoParaEditar(null);
     setIsCadastroOpen(false);
@@ -166,18 +224,28 @@ export default function App() {
     setToastNotificacao({
       tipo: 'sucesso',
       mensagem: isEdicao
-        ? `Cadastro de "${novoOuAtualizado.nomeCompleto}" atualizado com sucesso!`
-        : `Novo monitorado "${novoOuAtualizado.nomeCompleto}" cadastrado com sucesso!`,
+        ? `Cadastro de "${indFinal.nomeCompleto}" atualizado com sucesso!`
+        : `Novo monitorado "${indFinal.nomeCompleto}" cadastrado com sucesso!`,
     });
 
-    // Sincronizar com o Supabase em segundo plano
-    salvarIndividuoNoSupabase(novoOuAtualizado).catch((err) => {
+    // Sincronizar com o Supabase de forma assíncrona com resiliência
+    try {
+      const res = await salvarIndividuoNoSupabase(indFinal);
+      if (!res.sucesso) {
+        console.warn('Aviso ao sincronizar cadastro com Supabase:', res.erro);
+      }
+    } catch (err) {
       console.warn('Aviso Supabase (salvar indivíduo):', err);
-    });
+    }
   };
 
   const handleExcluirIndividuo = (individuoId: string) => {
-    setIndividuos((prev) => prev.filter((i) => i.id !== individuoId));
+    setIndividuos((prev) => {
+      const filtrados = prev.filter((i) => i.id !== individuoId);
+      salvarDadosLocais(filtrados);
+      return filtrados;
+    });
+
     if (individuoFicha && individuoFicha.id === individuoId) {
       setIndividuoFicha(null);
     }
@@ -201,16 +269,17 @@ export default function App() {
       observacoes?: string;
     }
   ) => {
-    setIndividuos((prev) =>
-      prev.map((ind) => {
-        if (ind.id !== individuoId) return ind;
+    const movId = `mov-${Date.now()}`;
+    const novaMov: MovimentacaoRegistro = {
+      id: movId,
+      individuoId,
+      tipo,
+      ...dados,
+    };
 
-        const novaMov: MovimentacaoRegistro = {
-          id: `mov-${Date.now()}`,
-          individuoId,
-          tipo,
-          ...dados,
-        };
+    setIndividuos((prev) => {
+      const atualizados = prev.map((ind) => {
+        if (ind.id !== individuoId) return ind;
 
         let novoStatus = ind.status;
         let ultimaSaida = ind.dataUltimaSaida;
@@ -226,22 +295,26 @@ export default function App() {
           novoStatus = 'ATIVO';
         }
 
-        return {
+        const atualizado: IndividuoMonitorado = {
           ...ind,
           status: novoStatus,
           dataUltimaSaida: ultimaSaida,
           movimentacoes: [novaMov, ...ind.movimentacoes],
+          updatedAt: new Date().toISOString(),
         };
-      })
-    );
+
+        // Salvar indivíduo atualizado com novo status no banco
+        salvarIndividuoNoSupabase(atualizado).catch(console.warn);
+
+        return atualizado;
+      });
+
+      salvarDadosLocais(atualizados);
+      return atualizados;
+    });
 
     // Sincronizar nova movimentação com o Supabase
-    salvarMovimentacaoNoSupabase({
-      id: `mov-${Date.now()}`,
-      individuoId,
-      tipo,
-      ...dados,
-    }).catch((err) => {
+    salvarMovimentacaoNoSupabase(novaMov).catch((err) => {
       console.warn('Aviso Supabase (salvar movimentação):', err);
     });
   };
@@ -260,21 +333,21 @@ export default function App() {
       observacoes?: string;
     }
   ) => {
-    setIndividuos((prev) =>
-      prev.map((ind) => {
+    const movEditada: MovimentacaoRegistro = {
+      id: movimentacaoId,
+      individuoId,
+      tipo,
+      ...dados,
+    };
+
+    setIndividuos((prev) => {
+      const atualizados = prev.map((ind) => {
         if (ind.id !== individuoId) return ind;
 
         const movsAtualizadas = ind.movimentacoes.map((mov) =>
-          mov.id === movimentacaoId
-            ? {
-                ...mov,
-                tipo,
-                ...dados,
-              }
-            : mov
+          mov.id === movimentacaoId ? movEditada : mov
         );
 
-        // Se for a movimentação mais recente, ajustar status do indivíduo
         let novoStatus = ind.status;
         if (tipo === 'SAIDA') {
           if (dados.motivo === 'FUGA_ROMPIMENTO') {
@@ -286,28 +359,43 @@ export default function App() {
           novoStatus = 'ATIVO';
         }
 
-        return {
+        const atualizado: IndividuoMonitorado = {
           ...ind,
           status: novoStatus,
           movimentacoes: movsAtualizadas,
+          updatedAt: new Date().toISOString(),
         };
-      })
-    );
 
+        salvarIndividuoNoSupabase(atualizado).catch(console.warn);
+
+        return atualizado;
+      });
+
+      salvarDadosLocais(atualizados);
+      return atualizados;
+    });
+
+    salvarMovimentacaoNoSupabase(movEditada).catch(console.warn);
     setMovimentacaoParaEditar(null);
   };
 
   // Excluir Registro de Movimentação
   const handleExcluirMovimentacao = (individuoId: string, movimentacaoId: string) => {
-    setIndividuos((prev) =>
-      prev.map((ind) => {
+    setIndividuos((prev) => {
+      const atualizados = prev.map((ind) => {
         if (ind.id !== individuoId) return ind;
-        return {
+        const atualizado: IndividuoMonitorado = {
           ...ind,
           movimentacoes: ind.movimentacoes.filter((m) => m.id !== movimentacaoId),
+          updatedAt: new Date().toISOString(),
         };
-      })
-    );
+        salvarIndividuoNoSupabase(atualizado).catch(console.warn);
+        return atualizado;
+      });
+
+      salvarDadosLocais(atualizados);
+      return atualizados;
+    });
     setMovimentacaoParaEditar(null);
   };
 
@@ -335,7 +423,7 @@ export default function App() {
       observacoes: fugaData.observacoes,
     };
 
-    const movSaida = {
+    const movSaida: MovimentacaoRegistro = {
       id: `mov-${Date.now()}`,
       individuoId: fugaData.individuoId,
       tipo: 'SAIDA' as TipoMovimentacao,
@@ -348,25 +436,30 @@ export default function App() {
 
     let individuoAtualizado: IndividuoMonitorado | null = null;
 
-    setIndividuos((prev) =>
-      prev.map((ind) => {
+    setIndividuos((prev) => {
+      const atualizados = prev.map((ind) => {
         if (ind.id !== fugaData.individuoId) return ind;
-        const atual = {
+        const atual: IndividuoMonitorado = {
           ...ind,
           status: 'FORAGIDO' as const,
           dataUltimaSaida: fugaData.dataHoraFuga,
           fugas: [novaFuga, ...ind.fugas],
           movimentacoes: [movSaida, ...ind.movimentacoes],
+          updatedAt: new Date().toISOString(),
         };
         individuoAtualizado = atual;
         return atual;
-      })
-    );
+      });
+
+      salvarDadosLocais(atualizados);
+      return atualizados;
+    });
 
     // Abrir imediatamente o Alerta de Fuga para impressão ou difusão
     if (individuoAtualizado) {
       setAlertaFugaIndividuo(individuoAtualizado);
       setAlertaFugaRegistro(novaFuga);
+      salvarIndividuoNoSupabase(individuoAtualizado).catch(console.warn);
     }
 
     // Sincronizar fuga com o Supabase
@@ -378,8 +471,8 @@ export default function App() {
   const handleMarcarRecapturado = (individuoId: string, fugaId: string) => {
     const agoraIso = new Date().toISOString();
 
-    setIndividuos((prev) =>
-      prev.map((ind) => {
+    setIndividuos((prev) => {
+      const atualizados = prev.map((ind) => {
         if (ind.id !== individuoId) return ind;
 
         const fugasAtualizadas = ind.fugas.map((f) =>
@@ -410,15 +503,25 @@ export default function App() {
           status: 'ATIVO' as const,
           fugas: fugasAtualizadas,
           movimentacoes: [movRetorno, ...ind.movimentacoes],
+          updatedAt: agoraIso,
         };
-      })
-    );
+      });
+
+      salvarDadosLocais(atualizados);
+      return atualizados;
+    });
   };
 
   const handleResetDados = () => {
     if (confirm('Deseja restaurar os dados de exemplo padrão do sistema?')) {
       setIndividuos(DADOS_INICIAIS_MONITORADOS);
-      localStorage.removeItem(STORAGE_KEY);
+      for (const k of STORAGE_KEYS) {
+        try {
+          localStorage.removeItem(k);
+        } catch (e) {
+          console.warn('Erro ao remover storage:', e);
+        }
+      }
     }
   };
 
@@ -473,8 +576,17 @@ export default function App() {
 
       {/* Conteúdo Principal */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
-        {/* Painel de Indicadores Executivos no topo */}
-        <DashboardStats individuos={individuos} />
+        {/* Painel de Indicadores Executivos no topo com Gráficos Recharts */}
+        <DashboardStats
+          individuos={individuos}
+          onFiltrarStatus={(status) => {
+            if (status === 'FORAGIDO') {
+              setAbaAtiva('fugas');
+            } else {
+              setAbaAtiva('todos');
+            }
+          }}
+        />
 
         {/* Barra de Ação Rápida de Exportação de Relatório Oficial com jsPDF */}
         <div className="mb-4 sm:mb-5 p-3 sm:p-3.5 bg-slate-900/80 border border-slate-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print shadow-sm">

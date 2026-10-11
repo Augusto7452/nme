@@ -195,11 +195,12 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
     }
 
     if (isEdicao && individuoParaEditar) {
-      // Edição de cadastro existente
+      // Edição de cadastro existente - preservação total de dados
+      const cpfEditado = cpf.trim() || individuoParaEditar.cpf || `${Math.floor(100 + Math.random() * 900)}.${Math.floor(100 + Math.random() * 900)}.${Math.floor(100 + Math.random() * 900)}-${Math.floor(10 + Math.random() * 90)}`;
       const atualizado: IndividuoMonitorado = {
         ...individuoParaEditar,
         nomeCompleto: nome,
-        cpf: cpf.trim() || individuoParaEditar.cpf || '000.000.000-00',
+        cpf: cpfEditado,
         dataNascimento,
         genero,
         perfil,
@@ -213,13 +214,17 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
         numeroTornozeleiraOuReceptor: numeroTornozeleira.trim() || individuoParaEditar.numeroTornozeleiraOuReceptor,
         imeiDispositivo: imeiDispositivo.trim(),
         raioExclusaoMetros: perfil !== 'MONITORADO_GERAL' ? raioExclusao : undefined,
-        individuoVinculadoId: individuoVinculadoId || undefined,
+        individuoVinculadoId: individuoVinculadoId && individuoVinculadoId.trim() !== '' ? individuoVinculadoId.trim() : undefined,
         nomeIndividuoVinculado: nomeVinculado || undefined,
         enderecoResidencial: enderecoResidencial.trim() || 'Endereço residencial cadastrado',
         cidade: cidade.trim() || 'São Paulo',
         estado: estado.trim() || 'SP',
         telefoneContato: telefoneContato.trim(),
         observacoesGerais: observacoesGerais.trim(),
+        dataPrimeiraEntrada: individuoParaEditar.dataPrimeiraEntrada || new Date().toISOString(),
+        movimentacoes: individuoParaEditar.movimentacoes || [],
+        fugas: individuoParaEditar.fugas || [],
+        updatedAt: new Date().toISOString(),
       };
 
       onSalvar(atualizado);
@@ -227,35 +232,37 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
       return;
     }
 
-    // Novo cadastro
+    // Novo cadastro com identificador persistente e histórico inicial
     const dataHoraIso = new Date(`${dataEntrada}T${horaEntrada}:00`).toISOString();
     const novoId = `mon-${Date.now()}`;
+    const cpfNovo = cpf.trim() || `${Math.floor(100 + Math.random() * 900)}.${Math.floor(100 + Math.random() * 900)}.${Math.floor(100 + Math.random() * 900)}-${Math.floor(10 + Math.random() * 90)}`;
 
     const novoIndividuo: IndividuoMonitorado = {
       id: novoId,
-      nomeCompleto,
-      cpf: cpf || '000.000.000-00',
+      nomeCompleto: nome,
+      cpf: cpfNovo,
       dataNascimento,
       genero,
-      fotoUrl: fotoUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80',
+      fotoUrl: fotoUrl.trim() || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80',
       perfil,
       status: 'ATIVO',
-      numeroProcesso,
-      varaJudicial: varaJudicial || 'Vara Criminal',
-      comarca: comarca || 'Comarca Central',
+      numeroProcesso: processo,
+      varaJudicial: varaJudicial.trim() || 'Vara Criminal',
+      comarca: comarca.trim() || 'Comarca Central',
       tipoPenal: tipoPenalFinal || 'Não especificado',
-      resumoTipificacao,
-      numeroTornozeleiraOuReceptor: numeroTornozeleira || (perfil === 'VITIMA_PROTEGIDA' ? 'RX-BOT-PENDENTE' : 'TX-PENDENTE'),
-      imeiDispositivo: imeiDispositivo || '',
+      resumoTipificacao: resumoTipificacao.trim(),
+      numeroTornozeleiraOuReceptor: numeroTornozeleira.trim() || (perfil === 'VITIMA_PROTEGIDA' ? 'RX-BOT-PENDENTE' : 'TX-PENDENTE'),
+      imeiDispositivo: imeiDispositivo.trim() || '',
       raioExclusaoMetros: perfil !== 'MONITORADO_GERAL' ? raioExclusao : undefined,
-      individuoVinculadoId: individuoVinculadoId || undefined,
+      individuoVinculadoId: individuoVinculadoId && individuoVinculadoId.trim() !== '' ? individuoVinculadoId.trim() : undefined,
       nomeIndividuoVinculado: nomeVinculado || undefined,
       dataPrimeiraEntrada: dataHoraIso,
-      enderecoResidencial: enderecoResidencial || 'Endereço residencial cadastrado',
-      cidade: cidade || 'São Paulo',
-      estado,
-      telefoneContato: telefoneContato || '',
-      observacoesGerais,
+      enderecoResidencial: enderecoResidencial.trim() || 'Endereço residencial cadastrado',
+      cidade: cidade.trim() || 'São Paulo',
+      estado: estado.trim() || 'SP',
+      telefoneContato: telefoneContato.trim() || '',
+      observacoesGerais: observacoesGerais.trim(),
+      updatedAt: new Date().toISOString(),
       movimentacoes: [
         {
           id: `mov-${Date.now()}`,
