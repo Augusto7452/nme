@@ -3,7 +3,7 @@
  * Oferece cache offline resiliente, precache de ativos principais e atualização automática
  */
 
-const CACHE_NAME = 'cmep-pwa-v1';
+const CACHE_NAME = 'cmep-pwa-v2';
 
 const STATIC_ASSETS = [
   '/',
@@ -18,12 +18,13 @@ const STATIC_ASSETS = [
 
 // Instalação do Service Worker e Precache dos ativos estáticos principais
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(STATIC_ASSETS).catch((err) => {
         console.warn('Aviso ao adicionar ativos ao cache durante a instalação:', err);
       });
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
