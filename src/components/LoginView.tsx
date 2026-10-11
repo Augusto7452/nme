@@ -255,7 +255,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                 }`}
               >
                 <UserPlus className="w-4 h-4" />
-                <span>Cadastrar Novo Operador</span>
+                <span>Cadastrar / Atualizar Operador</span>
               </button>
             </div>
 

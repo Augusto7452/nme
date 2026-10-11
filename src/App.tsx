@@ -16,10 +16,11 @@ import { RegistrarMovimentacaoModal } from './components/RegistrarMovimentacaoMo
 import { RegistrarFugaModal } from './components/RegistrarFugaModal';
 import { FichaIndividuoModal } from './components/FichaIndividuoModal';
 import { AlertaFugaModal } from './components/AlertaFugaModal';
+import { EditarOperadorModal } from './components/EditarOperadorModal';
 import { IndividuoMonitorado, TipoMovimentacao, RegistroFuga, MovimentacaoRegistro, UsuarioOperador } from './types/monitoring';
 import { DADOS_INICIAIS_MONITORADOS } from './data/mockData';
 import { gerarRelatorioPDF } from './utils/pdfGenerator';
-import { RotateCcw, FileText } from 'lucide-react';
+import { RotateCcw, FileText, CheckCircle2, X } from 'lucide-react';
 import { LoginView } from './components/LoginView';
 import { SupabaseModal } from './components/SupabaseModal';
 import {
@@ -100,6 +101,21 @@ export default function App() {
   const [alertaFugaIndividuo, setAlertaFugaIndividuo] = useState<IndividuoMonitorado | null>(null);
   const [alertaFugaRegistro, setAlertaFugaRegistro] = useState<RegistroFuga | null>(null);
 
+  // Modal para editar cadastro do operador conectado
+  const [isEditarOperadorOpen, setIsEditarOperadorOpen] = useState(false);
+
+  // Toast de Notificação
+  const [toastNotificacao, setToastNotificacao] = useState<{ tipo: 'sucesso' | 'info'; mensagem: string } | null>(null);
+
+  useEffect(() => {
+    if (toastNotificacao) {
+      const timer = setTimeout(() => {
+        setToastNotificacao(null);
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [toastNotificacao]);
+
   // Manter individuoFicha sincronizado com a lista de indivíduos
   useEffect(() => {
     if (individuoFicha) {
@@ -131,6 +147,8 @@ export default function App() {
 
   // Ações de persistência: Criar ou Editar Cadastro de Indivíduo
   const handleSalvarIndividuo = (novoOuAtualizado: IndividuoMonitorado) => {
+    const isEdicao = individuos.some((i) => i.id === novoOuAtualizado.id);
+
     setIndividuos((prev) => {
       const existe = prev.some((i) => i.id === novoOuAtualizado.id);
       if (existe) {
@@ -143,6 +161,14 @@ export default function App() {
       setIndividuoFicha(novoOuAtualizado);
     }
     setIndividuoParaEditar(null);
+    setIsCadastroOpen(false);
+
+    setToastNotificacao({
+      tipo: 'sucesso',
+      mensagem: isEdicao
+        ? `Cadastro de "${novoOuAtualizado.nomeCompleto}" atualizado com sucesso!`
+        : `Novo monitorado "${novoOuAtualizado.nomeCompleto}" cadastrado com sucesso!`,
+    });
 
     // Sincronizar com o Supabase em segundo plano
     salvarIndividuoNoSupabase(novoOuAtualizado).catch((err) => {
@@ -441,6 +467,7 @@ export default function App() {
         }}
         onExportarRelatorio={handleExportarRelatorio}
         onAbrirSupabase={() => setIsSupabaseModalOpen(true)}
+        onEditarOperador={() => setIsEditarOperadorOpen(true)}
         fugasAtivasCount={foragidosAtivosCount}
       />
 
@@ -682,6 +709,36 @@ export default function App() {
         individuosLocais={individuos}
         onIndividuosAtualizados={(novos) => setIndividuos(novos)}
       />
+
+      {/* Modal de Editar Cadastro do Operador */}
+      {usuarioLogado && (
+        <EditarOperadorModal
+          isOpen={isEditarOperadorOpen}
+          onClose={() => setIsEditarOperadorOpen(false)}
+          usuarioLogado={usuarioLogado}
+          onUsuarioAtualizado={(atualizado) => {
+            setUsuarioLogado(atualizado);
+            setToastNotificacao({
+              tipo: 'sucesso',
+              mensagem: `Cadastro do operador "${atualizado.nome}" atualizado com sucesso!`,
+            });
+          }}
+        />
+      )}
+
+      {/* Toast Notificação de Ação Concluída */}
+      {toastNotificacao && (
+        <div className="fixed top-4 right-4 z-[99] flex items-center gap-2.5 px-4 py-3 bg-emerald-950/95 border border-emerald-600 text-emerald-100 rounded-xl shadow-2xl backdrop-blur-md animate-in slide-in-from-top duration-200 text-xs font-semibold">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{toastNotificacao.mensagem}</span>
+          <button
+            onClick={() => setToastNotificacao(null)}
+            className="ml-2 text-emerald-400 hover:text-white p-0.5 rounded transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

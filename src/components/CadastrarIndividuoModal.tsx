@@ -61,8 +61,15 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
   const [telefoneContato, setTelefoneContato] = useState('');
   const [observacoesGerais, setObservacoesGerais] = useState('');
 
+  // Estado de Validação e Feedback
+  const [erroValidacao, setErroValidacao] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+
   // Sincronizar quando abrir ou quando mudar individuoParaEditar
   useEffect(() => {
+    setErroValidacao(null);
+    setSalvando(false);
+
     if (individuoParaEditar) {
       setNomeCompleto(individuoParaEditar.nomeCompleto || '');
       setCpf(individuoParaEditar.cpf || '');
@@ -153,14 +160,33 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!nomeCompleto || !numeroProcesso) {
-      alert('Por favor, preencha o Nome Completo e o Número do Processo.');
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    setErroValidacao(null);
+
+    const nome = nomeCompleto.trim();
+    const processo = numeroProcesso.trim();
+
+    if (!nome) {
+      setErroValidacao('Por favor, informe o Nome Completo do monitorado.');
       return;
     }
 
-    const tipoPenalFinal = tipoPenalSelect === 'OUTRO' ? tipoPenalCustom : tipoPenalSelect;
+    if (!processo) {
+      setErroValidacao('Por favor, informe o Número do Processo Judicial (CNJ).');
+      return;
+    }
+
+    if (tipoPenalSelect === 'OUTRO' && !tipoPenalCustom.trim()) {
+      setErroValidacao('Por favor, especifique o Tipo Penal no campo correspondente.');
+      return;
+    }
+
+    setSalvando(true);
+
+    const tipoPenalFinal = tipoPenalSelect === 'OUTRO' ? tipoPenalCustom.trim() : tipoPenalSelect;
 
     let nomeVinculado = '';
     if (individuoVinculadoId) {
@@ -172,28 +198,28 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
       // Edição de cadastro existente
       const atualizado: IndividuoMonitorado = {
         ...individuoParaEditar,
-        nomeCompleto,
-        cpf: cpf || '000.000.000-00',
+        nomeCompleto: nome,
+        cpf: cpf.trim() || individuoParaEditar.cpf || '000.000.000-00',
         dataNascimento,
         genero,
         perfil,
         status,
-        fotoUrl: fotoUrl || individuoParaEditar.fotoUrl,
-        numeroProcesso,
-        varaJudicial: varaJudicial || 'Vara Criminal',
-        comarca: comarca || 'Comarca Central',
+        fotoUrl: fotoUrl.trim() || individuoParaEditar.fotoUrl,
+        numeroProcesso: processo,
+        varaJudicial: varaJudicial.trim() || 'Vara Criminal',
+        comarca: comarca.trim() || 'Comarca Central',
         tipoPenal: tipoPenalFinal || 'Não especificado',
-        resumoTipificacao,
-        numeroTornozeleiraOuReceptor: numeroTornozeleira || individuoParaEditar.numeroTornozeleiraOuReceptor,
-        imeiDispositivo,
+        resumoTipificacao: resumoTipificacao.trim(),
+        numeroTornozeleiraOuReceptor: numeroTornozeleira.trim() || individuoParaEditar.numeroTornozeleiraOuReceptor,
+        imeiDispositivo: imeiDispositivo.trim(),
         raioExclusaoMetros: perfil !== 'MONITORADO_GERAL' ? raioExclusao : undefined,
         individuoVinculadoId: individuoVinculadoId || undefined,
         nomeIndividuoVinculado: nomeVinculado || undefined,
-        enderecoResidencial: enderecoResidencial || 'Endereço residencial cadastrado',
-        cidade: cidade || 'São Paulo',
-        estado,
-        telefoneContato,
-        observacoesGerais,
+        enderecoResidencial: enderecoResidencial.trim() || 'Endereço residencial cadastrado',
+        cidade: cidade.trim() || 'São Paulo',
+        estado: estado.trim() || 'SP',
+        telefoneContato: telefoneContato.trim(),
+        observacoesGerais: observacoesGerais.trim(),
       };
 
       onSalvar(atualizado);
@@ -250,8 +276,8 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden my-2 sm:my-6 max-h-[96vh] sm:max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-2 sm:p-4 bg-slate-950/90 backdrop-blur-md overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden my-2 sm:my-6 max-h-[96vh] sm:max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
         {/* Modal Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-800 bg-slate-900/90 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -281,8 +307,20 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
           </button>
         </div>
 
+        {/* Banner de Erro de Validação */}
+        {erroValidacao && (
+          <div className="mx-4 sm:mx-6 mt-4 p-3 rounded-xl bg-red-950/80 border border-red-800 text-red-200 text-xs flex items-center gap-2.5 animate-in fade-in shrink-0">
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <span className="font-semibold">{erroValidacao}</span>
+          </div>
+        )}
+
         {/* Modal Body / Form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 sm:space-y-6">
+        <form
+          id="form-cadastrar-individuo"
+          onSubmit={handleSubmit}
+          className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 sm:space-y-6"
+        >
           {/* Seção 1: Foto e Identificação Civil */}
           <div className="space-y-4">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
@@ -777,16 +815,27 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
             Cancelar
           </button>
           <button
-            type="button"
-            onClick={handleSubmit}
-            className={`w-full sm:w-auto px-5 py-2.5 sm:py-2 text-xs font-bold rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2 active:scale-95 ${
+            type="submit"
+            form="form-cadastrar-individuo"
+            onClick={() => handleSubmit()}
+            disabled={salvando}
+            className={`w-full sm:w-auto px-5 py-2.5 sm:py-2 text-xs font-bold rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer ${
               isEdicao
                 ? 'bg-blue-500 hover:bg-blue-400 text-slate-950'
                 : 'bg-amber-400 hover:bg-amber-300 text-slate-950'
             }`}
           >
-            {isEdicao ? <Edit3 className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
-            <span>{isEdicao ? 'Salvar Alterações Cadastrais' : 'Salvar e Efetivar Entrada'}</span>
+            {salvando ? (
+              <>
+                <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                <span>Gravando no Banco...</span>
+              </>
+            ) : (
+              <>
+                {isEdicao ? <Edit3 className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
+                <span>{isEdicao ? 'Salvar Alterações Cadastrais' : 'Salvar e Efetivar Entrada'}</span>
+              </>
+            )}
           </button>
         </div>
       </div>

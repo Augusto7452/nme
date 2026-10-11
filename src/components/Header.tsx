@@ -14,6 +14,7 @@ import {
   LogOut,
   UserCheck,
   Database,
+  Edit3,
 } from 'lucide-react';
 import { UsuarioOperador } from '../types/monitoring';
 
@@ -28,6 +29,7 @@ interface HeaderProps {
   usuarioLogado?: UsuarioOperador | null;
   onLogout?: () => void;
   onAbrirSupabase?: () => void;
+  onEditarOperador?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -41,6 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
   usuarioLogado,
   onLogout,
   onAbrirSupabase,
+  onEditarOperador,
 }) => {
   const [mobileMenuAberto, setMobileMenuAberto] = useState(false);
 
@@ -206,6 +209,15 @@ export const Header: React.FC<HeaderProps> = ({
                     {usuarioLogado.matricula}
                   </span>
                 </div>
+                {onEditarOperador && (
+                  <button
+                    onClick={onEditarOperador}
+                    title="Editar Cadastro e Dados do Operador"
+                    className="p-1.5 text-slate-400 hover:text-amber-300 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/40 rounded-lg transition-colors flex items-center justify-center group"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 group-hover:scale-105 transition-transform" />
+                  </button>
+                )}
                 <button
                   onClick={onLogout}
                   title="Encerrar Sessão / Desconectar da Central DME"
@@ -280,16 +292,31 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => {
-                  setMobileMenuAberto(false);
-                  onLogout?.();
-                }}
-                className="px-2.5 py-1.5 text-xs font-semibold text-red-300 bg-red-950/80 hover:bg-red-900 border border-red-800/80 rounded-lg transition-colors flex items-center gap-1.5 shrink-0"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span>Sair</span>
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {onEditarOperador && (
+                  <button
+                    onClick={() => {
+                      setMobileMenuAberto(false);
+                      onEditarOperador();
+                    }}
+                    title="Editar Cadastro do Operador"
+                    className="p-1.5 text-xs font-semibold text-slate-300 hover:text-amber-300 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-lg transition-colors flex items-center gap-1"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span className="text-[11px]">Editar</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setMobileMenuAberto(false);
+                    onLogout?.();
+                  }}
+                  className="px-2.5 py-1.5 text-xs font-semibold text-red-300 bg-red-950/80 hover:bg-red-900 border border-red-800/80 rounded-lg transition-colors flex items-center gap-1"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sair</span>
+                </button>
+              </div>
             </div>
           )}
 

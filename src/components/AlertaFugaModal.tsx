@@ -30,7 +30,7 @@ export const AlertaFugaModal: React.FC<AlertaFugaModalProps> = ({
   const registroFuga = fuga || individuo.fugas[individuo.fugas.length - 1];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/90 backdrop-blur-sm overflow-y-auto">
+    <div className="fixed inset-0 z-[75] flex items-center justify-center p-2 sm:p-4 bg-slate-950/90 backdrop-blur-md overflow-y-auto">
       <div className="relative w-full max-w-3xl bg-slate-900 border border-red-800 rounded-2xl shadow-2xl overflow-hidden my-2 sm:my-6 max-h-[96vh] sm:max-h-[92vh] flex flex-col">
         {/* Header no-print */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-red-900/60 bg-red-950/60 shrink-0 no-print">
