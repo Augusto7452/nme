@@ -17,6 +17,7 @@ import {
   Mail,
   Briefcase,
 } from 'lucide-react';
+import { DmeLogo } from './DmeLogo';
 import { UsuarioOperador, PerfilAcesso } from '../types/monitoring';
 import {
   autenticarOperadorNoSupabase,
@@ -179,8 +180,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
       {/* Faixa Superior Institucional */}
       <header className="relative z-10 border-b border-slate-900 bg-slate-950/80 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 shadow-lg shadow-amber-500/5">
-            <Radio className="w-5 h-5 animate-pulse" />
+          <div className="w-10 h-10 rounded-xl bg-slate-950 border border-amber-500/30 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/5 p-1">
+            <DmeLogo className="w-full h-full" showGlow={false} />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -209,16 +210,16 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
         <div className="w-full max-w-xl">
           {/* Card Principal */}
           <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 backdrop-blur-2xl shadow-2xl relative overflow-hidden">
-            {/* Header do Card */}
+            {/* Header do Card com Emblema Oficial da DME */}
             <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 mb-3 shadow-inner">
-                <Shield className="w-7 h-7" />
+              <div className="inline-flex items-center justify-center w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-slate-950/90 border-2 border-amber-500/40 p-2 mb-3 shadow-2xl shadow-amber-500/20 relative group transition-transform hover:scale-105">
+                <DmeLogo className="w-full h-full drop-shadow-[0_4px_12px_rgba(245,158,11,0.35)]" />
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                Acesso Institucional Seguro
+                Divisão de Monitoramento Eletrônico
               </h1>
               <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                Autenticação de policiais e agentes da Divisão de Monitoramento Eletrônico
+                Acesso institucional restrito aos servidores e operadores do sistema
               </p>
             </div>
 

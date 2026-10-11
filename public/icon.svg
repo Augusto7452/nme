@@ -1,41 +1,184 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
   <defs>
-    <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+    <!-- Gradientes de Ouro Metálico -->
+    <linearGradient id="goldGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb" />
+      <stop offset="25%" stop-color="#fde047" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="75%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#78350f" />
+    </linearGradient>
+
+    <linearGradient id="goldGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="50%" stop-color="#eab308" />
+      <stop offset="100%" stop-color="#92400e" />
+    </linearGradient>
+
+    <!-- Fundo Azul Policial / Tático Profundo -->
+    <radialGradient id="navyBg" cx="50%" cy="50%" r="50%">
       <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="65%" stop-color="#090d16" />
       <stop offset="100%" stop-color="#020617" />
     </radialGradient>
-    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fde047" />
-      <stop offset="50%" stop-color="#f59e0b" />
-      <stop offset="100%" stop-color="#d97706" />
-    </linearGradient>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="12" result="blur" />
+
+    <radialGradient id="radarPulse" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.35" />
+      <stop offset="45%" stop-color="#0284c7" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#0369a1" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Filtros de Brilho e Sombra -->
+    <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
       <feComposite in="SourceGraphic" in2="blur" operator="over" />
     </filter>
+
+    <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000000" flood-opacity="0.8" />
+    </filter>
+
+    <!-- Arcos de Texto Curvado Superior e Inferior -->
+    <path id="textArcTop" d="M 68 256 A 188 188 0 0 1 444 256" fill="none" />
+    <path id="textArcBottom" d="M 436 256 A 180 180 0 0 1 76 256" fill="none" />
   </defs>
 
-  <!-- Background base rounded squircle -->
-  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+  <!-- Base / Sombra Global -->
+  <g filter="url(#dropShadow)">
+    <!-- Círculo Externo / Borda Dourada com Textura Metálica -->
+    <circle cx="256" cy="256" r="248" fill="url(#goldGrad1)" stroke="#451a03" stroke-width="2" />
+    <circle cx="256" cy="256" r="236" fill="#090d16" stroke="url(#goldGrad2)" stroke-width="4" />
+    
+    <!-- Rebites / Marcadores Perimetrais de Precisão -->
+    <circle cx="256" cy="14" r="3" fill="#fde047" />
+    <circle cx="498" cy="256" r="3" fill="#fde047" />
+    <circle cx="256" cy="498" r="3" fill="#fde047" />
+    <circle cx="14" cy="256" r="3" fill="#fde047" />
 
-  <!-- Outer circular radar perimeter -->
-  <circle cx="256" cy="256" r="210" stroke="#f59e0b" stroke-width="6" opacity="0.4" stroke-dasharray="16 12" />
-  <circle cx="256" cy="256" r="160" stroke="#38bdf8" stroke-width="3" opacity="0.3" />
-  <circle cx="256" cy="256" r="110" stroke="#38bdf8" stroke-width="2" opacity="0.2" />
+    <!-- Anel Preto de Texto Institucional -->
+    <circle cx="256" cy="256" r="226" fill="#020617" stroke="url(#goldGrad1)" stroke-width="3" />
 
-  <!-- Center Shield Icon -->
-  <path d="M256 96 L376 148 V272 C376 348 324 412 256 432 C188 412 136 348 136 272 V148 Z" 
-        fill="#0f172a" 
-        stroke="url(#goldGrad)" 
-        stroke-width="14" 
-        stroke-linejoin="round"
-        filter="url(#glow)" />
+    <!-- Texto Superior: DIVISÃO DE MONITORAMENTO ELETRÔNICO -->
+    <text fill="url(#goldGrad1)" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="20.5" font-weight="900" letter-spacing="3.2">
+      <textPath href="#textArcTop" startOffset="50%" text-anchor="middle">
+        DIVISÃO DE MONITORAMENTO ELETRÔNICO
+      </textPath>
+    </text>
 
-  <!-- Geolocation / Beacon pulse -->
-  <circle cx="256" cy="240" r="32" fill="url(#goldGrad)" />
-  <circle cx="256" cy="240" r="16" fill="#ffffff" />
-  <path d="M256 280 L256 340 M230 330 L256 345 L282 330" stroke="#f59e0b" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- Estrelas Laterais Separadoras de 5 Pontas -->
+    <!-- Estrela Esquerda -->
+    <g transform="translate(42, 256) scale(0.9)">
+      <polygon points="0,-10 3,-3 10,-3 5,2 7,9 0,5 -7,9 -5,2 -10,-3 -3,-3" fill="url(#goldGrad1)" />
+    </g>
+    <!-- Estrela Direita -->
+    <g transform="translate(470, 256) scale(0.9)">
+      <polygon points="0,-10 3,-3 10,-3 5,2 7,9 0,5 -7,9 -5,2 -10,-3 -3,-3" fill="url(#goldGrad1)" />
+    </g>
 
-  <!-- Text Badge -->
-  <text x="256" y="385" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="800" fill="#f8fafc" letter-spacing="4">CMEP</text>
+    <!-- Texto Inferior: POLÍCIA PENAL · IAPEN · AP -->
+    <text fill="url(#goldGrad1)" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="19" font-weight="900" letter-spacing="4.5">
+      <textPath href="#textArcBottom" startOffset="50%" text-anchor="middle">
+        POLÍCIA PENAL • IAPEN • AP
+      </textPath>
+    </text>
+
+    <!-- Campo Interno: Medalhão Azul Tático -->
+    <circle cx="256" cy="256" r="162" fill="url(#navyBg)" stroke="url(#goldGrad2)" stroke-width="5" />
+    
+    <!-- Grade / Ondas de Radar Telemático de Monitoramento -->
+    <circle cx="256" cy="256" r="148" fill="url(#radarPulse)" />
+    <circle cx="256" cy="256" r="140" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="6 6" opacity="0.4" />
+    <circle cx="256" cy="256" r="105" fill="none" stroke="#38bdf8" stroke-width="1.5" opacity="0.35" />
+    <circle cx="256" cy="256" r="70" fill="none" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.45" />
+    <line x1="256" y1="116" x2="256" y2="396" stroke="#0284c7" stroke-width="1.2" opacity="0.3" />
+    <line x1="116" y1="256" x2="396" y2="256" stroke="#0284c7" stroke-width="1.2" opacity="0.3" />
+
+    <!-- ÁGUIA DOURADA IMPERIAL (Símbolo de Vigilância e Segurança Pública) -->
+    <g filter="url(#goldGlow)">
+      <!-- Asas Esquerdas da Águia -->
+      <path d="M 256 160 C 220 135 170 145 130 180 C 145 195 165 205 185 210 C 150 215 135 235 125 255 C 145 260 168 262 188 260 C 160 275 148 298 142 322 C 162 318 185 310 205 298 C 190 325 185 348 186 365 C 205 348 226 325 240 300 Z" 
+            fill="url(#goldGrad1)" stroke="#78350f" stroke-width="1.5" />
+      
+      <!-- Asas Direitas da Águia -->
+      <path d="M 256 160 C 292 135 342 145 382 180 C 367 195 347 205 327 210 C 362 215 377 235 387 255 C 367 260 344 262 324 260 C 352 275 364 298 370 322 C 350 318 327 310 307 298 C 322 325 327 348 326 365 C 307 348 286 325 272 300 Z" 
+            fill="url(#goldGrad1)" stroke="#78350f" stroke-width="1.5" />
+
+      <!-- Cabeça da Águia com Olhar Vigilante -->
+      <path d="M 256 138 C 248 138 244 144 246 152 C 248 160 252 165 256 168 C 260 165 264 160 266 152 C 268 144 264 138 256 138 Z" fill="url(#goldGrad2)" />
+      <polygon points="256,150 262,156 256,162 250,156" fill="#fffbeb" />
+      <polygon points="256,158 260,165 256,172 252,165" fill="#f59e0b" />
+    </g>
+
+    <!-- ESCUDO HERALDICO CENTRAL DE PROTEÇÃO E VIGILÂNCIA -->
+    <g filter="url(#dropShadow)">
+      <!-- Escudo Principal com Borda Dourada e Interior Preto/Azul -->
+      <path d="M 256 175 L 324 200 V 278 C 324 330 292 368 256 384 C 220 368 188 330 188 278 V 200 Z" 
+            fill="#090d16" 
+            stroke="url(#goldGrad1)" 
+            stroke-width="7" 
+            stroke-linejoin="round" />
+      <path d="M 256 185 L 316 207 V 276 C 316 322 288 357 256 372 C 224 357 196 322 196 276 V 207 Z" 
+            fill="url(#navyBg)" 
+            stroke="url(#goldGrad2)" 
+            stroke-width="2.5" />
+
+      <!-- ÍCONE DE TORNOZELEIRA ELETRÔNICA & ONDAS DE TELEMETRIA GPS -->
+      <!-- Ondas de Sinal GPS / Satélite (Topo do Escudo) -->
+      <path d="M 232 224 A 28 28 0 0 1 280 224" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" />
+      <path d="M 240 232 A 18 18 0 0 1 272 232" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" />
+      <circle cx="256" cy="240" r="4.5" fill="#fde047" />
+
+      <!-- Corpo da Tornozeleira Eletrônica de Monitoramento -->
+      <!-- Cinta / Bracelete Emborrachado Tático -->
+      <path d="M 226 252 C 226 244 286 244 286 252 L 282 280 C 282 286 230 286 230 280 Z" 
+            fill="#1e293b" 
+            stroke="url(#goldGrad1)" 
+            stroke-width="2" />
+      
+      <!-- Módulo Central Eletrônico Blindado (Case com LEDs de Status) -->
+      <rect x="238" y="248" width="36" height="34" rx="6" fill="#020617" stroke="url(#goldGrad2)" stroke-width="2" />
+      
+      <!-- Detalhes do Módulo: LEDs Indicadores e Radar -->
+      <circle cx="247" cy="257" r="2.8" fill="#10b981" /> <!-- LED Verde: Conectado / Online -->
+      <circle cx="256" cy="257" r="2.8" fill="#38bdf8" /> <!-- LED Azul: GPS Satélite Fixado -->
+      <circle cx="265" cy="257" r="2.8" fill="#f59e0b" /> <!-- LED Âmbar: Bateria / Telemetria -->
+
+      <!-- Símbolo de Radar / Alvo no Centro da Tornozeleira -->
+      <circle cx="256" cy="270" r="6" fill="none" stroke="#fde047" stroke-width="1.5" />
+      <circle cx="256" cy="270" r="2" fill="#fde047" />
+
+      <!-- Faixa Dourada com Sigla DME -->
+      <g transform="translate(0, 10)">
+        <!-- Listel / Faixa Curva -->
+        <path d="M 214 298 L 298 298 L 290 318 L 256 324 L 222 318 Z" 
+              fill="url(#goldGrad1)" 
+              stroke="#78350f" 
+              stroke-width="1.5" />
+        <text x="256" y="315" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="900" fill="#020617" letter-spacing="3">
+          DME
+        </text>
+      </g>
+
+      <!-- Balança da Justiça / Lei (na parte inferior do escudo) -->
+      <path d="M 256 340 L 256 358 M 244 346 L 268 346 M 244 346 L 241 354 M 268 346 L 271 354" 
+            stroke="url(#goldGrad1)" stroke-width="2" stroke-linecap="round" />
+      <path d="M 238 354 C 241 358 247 358 250 354 Z" fill="url(#goldGrad1)" />
+      <path d="M 262 354 C 265 358 271 358 274 354 Z" fill="url(#goldGrad1)" />
+    </g>
+
+    <!-- Ramos de Louro Dourados Circundando a Base Inferior -->
+    <g fill="url(#goldGrad1)" stroke="#78350f" stroke-width="0.8">
+      <!-- Ramo Esquerdo -->
+      <ellipse cx="206" cy="380" rx="9" ry="4" transform="rotate(-35 206 380)" />
+      <ellipse cx="192" cy="365" rx="9" ry="4" transform="rotate(-45 192 365)" />
+      <ellipse cx="180" cy="346" rx="9" ry="4" transform="rotate(-55 180 346)" />
+      <ellipse cx="172" cy="324" rx="9" ry="4" transform="rotate(-65 172 324)" />
+      
+      <!-- Ramo Direito -->
+      <ellipse cx="306" cy="380" rx="9" ry="4" transform="rotate(35 306 380)" />
+      <ellipse cx="320" cy="365" rx="9" ry="4" transform="rotate(45 320 365)" />
+      <ellipse cx="332" cy="346" rx="9" ry="4" transform="rotate(55 332 346)" />
+      <ellipse cx="340" cy="324" rx="9" ry="4" transform="rotate(65 340 324)" />
+    </g>
+  </g>
 </svg>

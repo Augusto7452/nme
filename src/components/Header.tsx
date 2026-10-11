@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { UsuarioOperador } from '../types/monitoring';
 import { PWAInstallHeaderButton } from './PWAInstallPrompt';
+import { DmeLogo } from './DmeLogo';
 
 interface HeaderProps {
   abaAtiva: 'todos' | 'movimentacoes' | 'vitimas_agressores' | 'fugas' | 'faixas_etarias';
@@ -94,8 +95,8 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
           {/* Zone 1: Marca Institucional DME */}
           <div className="flex items-center gap-2.5 shrink-0">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
-              <Radio className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-950 border border-amber-500/30 flex items-center justify-center shrink-0 p-1 shadow-sm shadow-amber-500/10">
+              <DmeLogo className="w-full h-full" showGlow={false} />
             </div>
             <div className="flex flex-col">
               <div className="text-sm sm:text-base font-bold tracking-tight text-white flex items-center gap-1.5 sm:gap-2">

@@ -1,8 +1,9 @@
 {
   "id": "/",
-  "name": "CMEP - Sistema de Monitoramento Eletrônico",
-  "short_name": "CMEP Monitor",
-  "description": "Sistema integrado de registro e gestão de monitoramento eletrônico, agressores, vítimas protegidas e registros de fuga.",
+  "name": "Divisão de Monitoramento Eletrônico",
+  "short_name": "Divisão de Monitoramento",
+  "version": "2.2.0",
+  "description": "Sistema oficial de registro e gestão da Divisão de Monitoramento Eletrônico, agressores, vítimas protegidas e registros de fuga.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

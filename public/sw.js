@@ -1,9 +1,10 @@
 /**
- * Service Worker para CMEP - Sistema de Monitoramento Eletrônico
- * Oferece cache offline resiliente, precache de ativos principais e atualização automática
+ * Service Worker para Divisão de Monitoramento Eletrônico
+ * Oferece cache offline resiliente, checagem ativa de versão e atualização forçada na Vercel
  */
 
-const CACHE_NAME = 'cmep-pwa-v3';
+const APP_VERSION = '2.2.0';
+const CACHE_NAME = `dme-pwa-v${APP_VERSION}`;
 
 const STATIC_ASSETS = [
   '/',
@@ -18,32 +19,48 @@ const STATIC_ASSETS = [
 
 // Instalação do Service Worker e Precache dos ativos estáticos principais
 self.addEventListener('install', (event) => {
+  // Força ativação imediata sem esperar o término de instâncias anteriores
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(STATIC_ASSETS).catch((err) => {
-        console.warn('Aviso ao adicionar ativos ao cache durante a instalação:', err);
+        console.warn('[SW] Aviso ao adicionar ativos ao cache durante a instalação:', err);
       });
     })
   );
 });
 
-// Ativação do Service Worker e limpeza de caches antigos
+// Ativação do Service Worker, limpeza rigorosa de caches legados e reivindicação imediata de clientes
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
+    caches
+      .keys()
+      .then((keys) => {
+        return Promise.all(
+          keys.map((key) => {
+            if (key !== CACHE_NAME) {
+              console.log('[SW] Purgando cache antigo:', key);
+              return caches.delete(key);
+            }
+          })
+        );
+      })
+      .then(() => self.clients.claim())
+      .then(() => {
+        // Notificar todos os clientes abertos sobre a ativação da nova versão
+        return self.clients.matchAll({ type: 'window' }).then((clients) => {
+          clients.forEach((client) => {
+            client.postMessage({
+              type: 'SW_UPDATED',
+              version: APP_VERSION,
+            });
+          });
+        });
+      })
   );
 });
 
-// Listener para mensagens da aplicação
+// Listener para mensagens de controle vindas da aplicação
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
@@ -55,18 +72,19 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // Não interceptar requisições para o próprio SW, APIs externas ou métodos não-GET
+  // Nunca armazenar em cache o próprio SW, manifest, ou chamadas de API externas
   if (
     req.method !== 'GET' ||
     url.pathname === '/sw.js' ||
+    url.pathname === '/manifest.json' ||
     url.pathname.startsWith('/api') ||
     url.hostname.includes('supabase.co')
   ) {
     return;
   }
 
-  // Requisições de navegação (HTML): Network-First com fallback para cache
-  if (req.mode === 'navigate') {
+  // Requisições de navegação (HTML / entrada da app): Network-First para garantir HTML recente da Vercel
+  if (req.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
     event.respondWith(
       fetch(req)
         .then((networkResponse) => {
@@ -77,17 +95,17 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         })
         .catch(() => {
-          return caches.match(req).then((cached) => cached || caches.match('/'));
+          return caches.match(req).then((cached) => cached || caches.match('/index.html') || caches.match('/'));
         })
     );
     return;
   }
 
-  // Ativos estáticos (scripts, estilos, fontes, imagens): Cache-First ou Stale-While-Revalidate
+  // Ativos estáticos (scripts compilados com hash, imagens, fontes): Stale-While-Revalidate
   event.respondWith(
     caches.match(req).then((cachedResponse) => {
       if (cachedResponse) {
-        // Atualiza o cache em segundo plano (Stale-While-Revalidate)
+        // Atualiza o cache em segundo plano em caso de novos deploys
         fetch(req)
           .then((networkResponse) => {
             if (networkResponse && networkResponse.status === 200) {
@@ -99,7 +117,7 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse;
       }
 
-      // Se não estiver no cache, busca na rede
+      // Se não estiver no cache, busca na rede e guarda
       return fetch(req).then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200) {
           const responseClone = networkResponse.clone();

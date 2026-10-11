@@ -58,7 +58,7 @@ export const PWAInstallPrompt: React.FC = () => {
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-1">
-                <h4 className="text-sm font-bold text-white">Instalar Aplicativo CMEP</h4>
+                <h4 className="text-sm font-bold text-white">Instalar Aplicativo DME</h4>
                 <button
                   onClick={handleDismissBanner}
                   className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors -mr-1 -mt-1"
@@ -132,7 +132,7 @@ export const PWAInstallPrompt: React.FC = () => {
 
               <div className="flex items-start gap-3 p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/30 text-emerald-300">
                 <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400 mt-0.5" />
-                <span>O ícone do CMEP aparecerá direto na sua tela inicial como um app nativo.</span>
+                <span>O ícone da Divisão de Monitoramento Eletrônico aparecerá direto na sua tela inicial como um app nativo.</span>
               </div>
             </div>
 
@@ -172,7 +172,7 @@ export const PWAInstallHeaderButton: React.FC = () => {
     <>
       <button
         onClick={handleClick}
-        title="Instalar CMEP no dispositivo"
+        title="Instalar Divisão de Monitoramento no dispositivo"
         className="px-2.5 py-1.5 text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-xl transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
       >
         <Download className="w-3.5 h-3.5" />
