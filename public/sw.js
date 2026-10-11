@@ -3,7 +3,7 @@
  * Oferece cache offline resiliente, precache de ativos principais e atualização automática
  */
 
-const CACHE_NAME = 'cmep-pwa-v2';
+const CACHE_NAME = 'cmep-pwa-v3';
 
 const STATIC_ASSETS = [
   '/',
@@ -43,13 +43,25 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// Listener para mensagens da aplicação
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 // Interceptação de requisições de rede
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // Não interceptar chamadas de API do Supabase ou requisições não-GET
-  if (req.method !== 'GET' || url.pathname.startsWith('/api') || url.hostname.includes('supabase.co')) {
+  // Não interceptar requisições para o próprio SW, APIs externas ou métodos não-GET
+  if (
+    req.method !== 'GET' ||
+    url.pathname === '/sw.js' ||
+    url.pathname.startsWith('/api') ||
+    url.hostname.includes('supabase.co')
+  ) {
     return;
   }
 

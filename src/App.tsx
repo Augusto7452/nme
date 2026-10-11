@@ -25,6 +25,7 @@ import { LoginView } from './components/LoginView';
 import { SupabaseModal } from './components/SupabaseModal';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { PWAOfflineIndicator } from './components/PWAOfflineIndicator';
+import { PWAUpdateNotification } from './components/PWAUpdateNotification';
 import {
   carregarIndividuosDoSupabase,
   salvarIndividuoNoSupabase,
@@ -857,6 +858,9 @@ export default function App() {
           </button>
         </div>
       )}
+
+      {/* Notificação de Atualização do PWA */}
+      <PWAUpdateNotification />
 
       {/* Notificação e Diálogo Guiado de Instalação do PWA */}
       <PWAInstallPrompt />
