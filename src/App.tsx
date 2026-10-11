@@ -23,6 +23,8 @@ import { gerarRelatorioPDF } from './utils/pdfGenerator';
 import { RotateCcw, FileText, CheckCircle2, X } from 'lucide-react';
 import { LoginView } from './components/LoginView';
 import { SupabaseModal } from './components/SupabaseModal';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
+import { PWAOfflineIndicator } from './components/PWAOfflineIndicator';
 import {
   carregarIndividuosDoSupabase,
   salvarIndividuoNoSupabase,
@@ -525,8 +527,10 @@ export default function App() {
     }
   };
 
-  const handleExportarRelatorio = () => {
-    gerarRelatorioPDF(abaAtiva, individuos);
+  const handleExportarRelatorio = (movimentacoesCustom?: unknown, infoFiltros?: string) => {
+    const listaCustom = Array.isArray(movimentacoesCustom) ? movimentacoesCustom : undefined;
+    const info = typeof infoFiltros === 'string' ? infoFiltros : undefined;
+    gerarRelatorioPDF(abaAtiva, individuos, info, listaCustom);
   };
 
   // Se o operador não estiver autenticado, exibir a Tela de Login Institucional da DME
@@ -543,6 +547,8 @@ export default function App() {
           individuosLocais={individuos}
           onIndividuosAtualizados={(novosDados: IndividuoMonitorado[]) => setIndividuos(novosDados)}
         />
+        <PWAInstallPrompt />
+        <PWAOfflineIndicator />
       </>
     );
   }
@@ -851,6 +857,12 @@ export default function App() {
           </button>
         </div>
       )}
+
+      {/* Notificação e Diálogo Guiado de Instalação do PWA */}
+      <PWAInstallPrompt />
+
+      {/* Indicador de Status Offline */}
+      <PWAOfflineIndicator />
     </div>
   );
 }

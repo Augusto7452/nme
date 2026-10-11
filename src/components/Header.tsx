@@ -17,6 +17,7 @@ import {
   Edit3,
 } from 'lucide-react';
 import { UsuarioOperador } from '../types/monitoring';
+import { PWAInstallHeaderButton } from './PWAInstallPrompt';
 
 interface HeaderProps {
   abaAtiva: 'todos' | 'movimentacoes' | 'vitimas_agressores' | 'fugas' | 'faixas_etarias';
@@ -167,6 +168,9 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="hidden md:inline">Supabase</span>
               </button>
             )}
+
+            {/* Botão de Instalação PWA */}
+            <PWAInstallHeaderButton />
 
             {/* Entrada / Saída (visível a partir de md) */}
             <button

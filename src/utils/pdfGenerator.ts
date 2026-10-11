@@ -14,7 +14,8 @@ import {
 export function gerarRelatorioPDF(
   abaAtiva: 'todos' | 'movimentacoes' | 'vitimas_agressores' | 'fugas' | 'faixas_etarias',
   individuos: IndividuoMonitorado[],
-  filtrosInfo?: string
+  filtrosInfo?: string,
+  movimentacoesCustom?: any[]
 ) {
   const doc = new jsPDF({
     orientation: 'landscape',
@@ -175,13 +176,16 @@ export function gerarRelatorioPDF(
       'Histórico cronológico de ativações, acolhimentos, desativações, revogações e evasões'
     );
 
-    const todasMovimentacoes = individuos.flatMap((ind) =>
-      ind.movimentacoes.map((mov) => ({
-        ...mov,
-        individuo: ind,
-      }))
-    );
+    const listaBase = movimentacoesCustom && movimentacoesCustom.length > 0
+      ? movimentacoesCustom
+      : individuos.flatMap((ind) =>
+          ind.movimentacoes.map((mov) => ({
+            ...mov,
+            individuo: ind,
+          }))
+        );
 
+    const todasMovimentacoes = [...listaBase];
     todasMovimentacoes.sort(
       (a, b) => new Date(b.dataHora).getTime() - new Date(a.dataHora).getTime()
     );

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ArrowUpDown,
   ArrowDownRight,
@@ -13,6 +13,13 @@ import {
   LayoutGrid,
   List,
   RotateCcw,
+  Calendar,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  TrendingDown,
+  X,
 } from 'lucide-react';
 import { IndividuoMonitorado, TipoMovimentacao, PerfilTipo, MovimentacaoRegistro } from '../types/monitoring';
 import { formatarDataHora, rotuloPerfil } from '../utils/ageUtils';
@@ -22,8 +29,23 @@ interface MovimentacoesViewProps {
   onNovaMovimentacao: () => void;
   onSelecionarIndividuo: (ind: IndividuoMonitorado) => void;
   onEditarMovimentacao: (individuoId: string, mov: MovimentacaoRegistro) => void;
-  onExportarPDF?: () => void;
+  onExportarPDF?: (movimentacoesFiltradas?: any[], infoFiltros?: string) => void;
 }
+
+const NOMES_MESES = [
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
+];
 
 export const MovimentacoesView: React.FC<MovimentacoesViewProps> = ({
   individuos,
@@ -34,46 +56,157 @@ export const MovimentacoesView: React.FC<MovimentacoesViewProps> = ({
 }) => {
   const [tipoFiltro, setTipoFiltro] = useState<'TODOS' | TipoMovimentacao>('TODOS');
   const [perfilFiltro, setPerfilFiltro] = useState<'TODOS' | PerfilTipo>('TODOS');
+  const [mesAnoFiltro, setMesAnoFiltro] = useState<string>('TODOS'); // 'TODOS' ou 'YYYY-MM'
   const [busca, setBusca] = useState('');
   const [modoVisualizacao, setModoVisualizacao] = useState<'auto' | 'cards' | 'tabela'>('auto');
 
   // Compilar todas as movimentações de todos os indivíduos com dados do indivíduo
-  const todasMovimentacoes = individuos.flatMap((ind) =>
-    ind.movimentacoes.map((mov) => ({
-      ...mov,
-      individuo: ind,
-    }))
-  );
+  const todasMovimentacoes = useMemo(() => {
+    const lista = individuos.flatMap((ind) =>
+      ind.movimentacoes.map((mov) => ({
+        ...mov,
+        individuo: ind,
+      }))
+    );
+    // Ordenar por data mais recente
+    lista.sort((a, b) => new Date(b.dataHora).getTime() - new Date(a.dataHora).getTime());
+    return lista;
+  }, [individuos]);
 
-  // Ordenar por data mais recente
-  todasMovimentacoes.sort(
-    (a, b) => new Date(b.dataHora).getTime() - new Date(a.dataHora).getTime()
-  );
+  // Compilar lista de meses distintos presentes nas movimentações com contagens
+  const mesesDisponiveis = useMemo(() => {
+    const mapa = new Map<
+      string,
+      { chave: string; rotulo: string; ano: number; mes: number; total: number; entradas: number; saidas: number }
+    >();
+
+    todasMovimentacoes.forEach((item) => {
+      try {
+        const d = new Date(item.dataHora);
+        if (isNaN(d.getTime())) return;
+        const ano = d.getFullYear();
+        const mesIdx = d.getMonth();
+        const mesStr = String(mesIdx + 1).padStart(2, '0');
+        const chave = `${ano}-${mesStr}`;
+
+        const registro = mapa.get(chave) || {
+          chave,
+          rotulo: `${NOMES_MESES[mesIdx]} de ${ano}`,
+          ano,
+          mes: mesIdx + 1,
+          total: 0,
+          entradas: 0,
+          saidas: 0,
+        };
+
+        registro.total += 1;
+        if (item.tipo === 'ENTRADA') registro.entradas += 1;
+        if (item.tipo === 'SAIDA') registro.saidas += 1;
+        mapa.set(chave, registro);
+      } catch {
+        // Ignorar datas inválidas
+      }
+    });
+
+    return Array.from(mapa.values()).sort((a, b) => b.chave.localeCompare(a.chave));
+  }, [todasMovimentacoes]);
+
+  // Formatar rótulo de um mês selecionado (ex: "2024-02" -> "Fevereiro de 2024")
+  const obterRotuloMes = (chave: string) => {
+    if (chave === 'TODOS') return 'Todos os Meses';
+    const partes = chave.split('-');
+    if (partes.length === 2) {
+      const ano = partes[0];
+      const mesNum = parseInt(partes[1], 10) - 1;
+      const nomeMes = NOMES_MESES[mesNum] || partes[1];
+      return `${nomeMes} de ${ano}`;
+    }
+    return chave;
+  };
+
+  // Mês corrente chave
+  const mesAtualChave = useMemo(() => {
+    const hoje = new Date();
+    return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+  }, []);
+
+  // Navegar mês anterior / próximo mês
+  const navegarMes = (delta: -1 | 1) => {
+    if (mesAnoFiltro === 'TODOS') {
+      if (mesesDisponiveis.length > 0) {
+        setMesAnoFiltro(mesesDisponiveis[0].chave);
+      } else {
+        setMesAnoFiltro(mesAtualChave);
+      }
+      return;
+    }
+    const [anoStr, mesStr] = mesAnoFiltro.split('-');
+    let ano = parseInt(anoStr, 10);
+    let mes = parseInt(mesStr, 10);
+
+    mes += delta;
+    if (mes < 1) {
+      mes = 12;
+      ano -= 1;
+    } else if (mes > 12) {
+      mes = 1;
+      ano += 1;
+    }
+    const novaChave = `${ano}-${String(mes).padStart(2, '0')}`;
+    setMesAnoFiltro(novaChave);
+  };
 
   // Aplicar filtros
-  const filtradas = todasMovimentacoes.filter((item) => {
-    if (tipoFiltro !== 'TODOS' && item.tipo !== tipoFiltro) return false;
-    if (perfilFiltro !== 'TODOS' && item.individuo.perfil !== perfilFiltro) return false;
-    if (busca) {
-      const termo = busca.toLowerCase();
-      const matchNome = item.individuo.nomeCompleto.toLowerCase().includes(termo);
-      const matchCpf = item.individuo.cpf.includes(termo);
-      const matchProc = item.individuo.numeroProcesso.includes(termo);
-      const matchMotivo = item.motivoDetalhado.toLowerCase().includes(termo);
-      if (!matchNome && !matchCpf && !matchProc && !matchMotivo) return false;
-    }
-    return true;
-  });
+  const filtradas = useMemo(() => {
+    return todasMovimentacoes.filter((item) => {
+      if (tipoFiltro !== 'TODOS' && item.tipo !== tipoFiltro) return false;
+      if (perfilFiltro !== 'TODOS' && item.individuo.perfil !== perfilFiltro) return false;
 
-  const totalEntradas = todasMovimentacoes.filter((m) => m.tipo === 'ENTRADA').length;
-  const totalSaidas = todasMovimentacoes.filter((m) => m.tipo === 'SAIDA').length;
+      // Filtro por Mês (YYYY-MM)
+      if (mesAnoFiltro !== 'TODOS') {
+        try {
+          const d = new Date(item.dataHora);
+          if (!isNaN(d.getTime())) {
+            const chaveItem = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            if (chaveItem !== mesAnoFiltro) return false;
+          } else {
+            if (!item.dataHora.startsWith(mesAnoFiltro)) return false;
+          }
+        } catch {
+          if (!item.dataHora.startsWith(mesAnoFiltro)) return false;
+        }
+      }
 
-  const temFiltroAtivo = busca.trim() !== '' || tipoFiltro !== 'TODOS' || perfilFiltro !== 'TODOS';
+      if (busca) {
+        const termo = busca.toLowerCase();
+        const matchNome = item.individuo.nomeCompleto.toLowerCase().includes(termo);
+        const matchCpf = item.individuo.cpf.includes(termo);
+        const matchProc = item.individuo.numeroProcesso.includes(termo);
+        const matchMotivo = item.motivoDetalhado.toLowerCase().includes(termo);
+        if (!matchNome && !matchCpf && !matchProc && !matchMotivo) return false;
+      }
+      return true;
+    });
+  }, [todasMovimentacoes, tipoFiltro, perfilFiltro, mesAnoFiltro, busca]);
+
+  const totalEntradasGeral = todasMovimentacoes.filter((m) => m.tipo === 'ENTRADA').length;
+  const totalSaidasGeral = todasMovimentacoes.filter((m) => m.tipo === 'SAIDA').length;
+
+  const totalEntradasFiltradas = filtradas.filter((m) => m.tipo === 'ENTRADA').length;
+  const totalSaidasFiltradas = filtradas.filter((m) => m.tipo === 'SAIDA').length;
+  const saldoLiquidoFiltrado = totalEntradasFiltradas - totalSaidasFiltradas;
+
+  const temFiltroAtivo =
+    busca.trim() !== '' ||
+    tipoFiltro !== 'TODOS' ||
+    perfilFiltro !== 'TODOS' ||
+    mesAnoFiltro !== 'TODOS';
 
   const limparFiltros = () => {
     setBusca('');
     setTipoFiltro('TODOS');
     setPerfilFiltro('TODOS');
+    setMesAnoFiltro('TODOS');
   };
 
   const handleExportCSV = () => {
@@ -110,10 +243,20 @@ export const MovimentacoesView: React.FC<MovimentacoesViewProps> = ({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `livro-movimentacoes-dme-${Date.now()}.csv`);
+    const sulfixoMes = mesAnoFiltro !== 'TODOS' ? `-${mesAnoFiltro}` : '';
+    link.setAttribute('download', `livro-movimentacoes-dme${sulfixoMes}-${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleExportPDF = () => {
+    if (!onExportarPDF) return;
+    const filtroLabel =
+      mesAnoFiltro !== 'TODOS'
+        ? `Mês de Referência: ${obterRotuloMes(mesAnoFiltro)} (${filtradas.length} registros)`
+        : `Todos os Períodos (${filtradas.length} registros)`;
+    onExportarPDF(filtradas, filtroLabel);
   };
 
   return (
@@ -133,9 +276,9 @@ export const MovimentacoesView: React.FC<MovimentacoesViewProps> = ({
         <div className="flex items-center gap-1.5 sm:gap-2 no-print flex-wrap">
           {onExportarPDF && (
             <button
-              onClick={onExportarPDF}
+              onClick={handleExportPDF}
               className="px-2.5 sm:px-3 py-1.5 text-xs font-semibold bg-blue-900/60 hover:bg-blue-800 text-blue-200 border border-blue-700/80 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm"
-              title="Gerar PDF Oficial do Livro de Movimentações"
+              title="Gerar PDF Oficial do Livro de Movimentações Filtradas"
             >
               <FileText className="w-3.5 h-3.5 text-blue-300" />
               <span>Exportar PDF</span>
@@ -198,7 +341,7 @@ export const MovimentacoesView: React.FC<MovimentacoesViewProps> = ({
               }`}
             >
               <ArrowDownRight className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Entradas ({totalEntradas})</span>
+              <span>Entradas ({totalEntradasGeral})</span>
             </button>
             <button
               onClick={() => setTipoFiltro('SAIDA')}
@@ -207,7 +350,7 @@ export const MovimentacoesView: React.FC<MovimentacoesViewProps> = ({
               }`}
             >
               <ArrowUpRight className="w-3.5 h-3.5 text-orange-400" />
-              <span>Saídas ({totalSaidas})</span>
+              <span>Saídas ({totalSaidasGeral})</span>
             </button>
           </div>
 
@@ -226,19 +369,182 @@ export const MovimentacoesView: React.FC<MovimentacoesViewProps> = ({
           </div>
         </div>
 
+        {/* Linha Dedicada: Filtro de Entradas & Saídas por Mês */}
+        <div className="bg-slate-950/70 border border-slate-800/90 rounded-xl p-2.5 sm:p-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          {/* Lado Esquerdo: Controles de Seleção do Mês */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
+              <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Filtrar por Mês:</span>
+            </div>
+
+            {/* Menu Dropdown de Meses com Movimentações Registradas */}
+            <select
+              value={mesAnoFiltro}
+              onChange={(e) => setMesAnoFiltro(e.target.value)}
+              className="bg-slate-900 border border-slate-700/80 hover:border-amber-400 text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-amber-400 font-medium"
+            >
+              <option value="TODOS">Todos os Meses (Visão Geral)</option>
+              {mesesDisponiveis.map((m) => (
+                <option key={m.chave} value={m.chave}>
+                  {m.rotulo} ({m.total} reg: {m.entradas}E / {m.saidas}S)
+                </option>
+              ))}
+            </select>
+
+            {/* Input Nativo HTML5 Mês (Permite escolher qualquer mês e ano livremente) */}
+            <div className="relative flex items-center">
+              <input
+                type="month"
+                value={mesAnoFiltro === 'TODOS' ? '' : mesAnoFiltro}
+                onChange={(e) => setMesAnoFiltro(e.target.value || 'TODOS')}
+                title="Selecionar Mês/Ano Específico no Calendário"
+                className="bg-slate-900 border border-slate-700/80 hover:border-amber-400 text-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-amber-400 font-mono"
+              />
+            </div>
+
+            {/* Botões de Navegação Rápida entre Meses */}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => navegarMes(-1)}
+                title="Mês Anterior"
+                className="p-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg text-slate-300 transition-colors"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => navegarMes(1)}
+                title="Próximo Mês"
+                className="p-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-lg text-slate-300 transition-colors"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Atalhos Rápidos */}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setMesAnoFiltro(mesAtualChave)}
+                className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-colors border ${
+                  mesAnoFiltro === mesAtualChave
+                    ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-sm'
+                    : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
+                }`}
+              >
+                Mês Atual
+              </button>
+              {mesAnoFiltro !== 'TODOS' && (
+                <button
+                  type="button"
+                  onClick={() => setMesAnoFiltro('TODOS')}
+                  className="px-2 py-1 text-[11px] font-semibold text-slate-400 hover:text-amber-400 bg-slate-900 border border-slate-800 rounded-lg transition-colors"
+                >
+                  Ver Todos
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Lado Direito: KPIs e Saldo do Mês Selecionado */}
+          <div className="flex items-center gap-2 self-start lg:self-auto flex-wrap">
+            {mesAnoFiltro !== 'TODOS' ? (
+              <div className="flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-2.5 py-1 rounded-lg text-xs">
+                <span className="text-slate-400">
+                  <span className="font-bold text-amber-300">{obterRotuloMes(mesAnoFiltro)}</span>:
+                </span>
+                <span className="inline-flex items-center gap-1 text-cyan-300 font-bold font-mono">
+                  <ArrowDownRight className="w-3 h-3 text-cyan-400" />
+                  {totalEntradasFiltradas} ent.
+                </span>
+                <span className="text-slate-600">|</span>
+                <span className="inline-flex items-center gap-1 text-orange-300 font-bold font-mono">
+                  <ArrowUpRight className="w-3 h-3 text-orange-400" />
+                  {totalSaidasFiltradas} saíd.
+                </span>
+                <span className="text-slate-600">|</span>
+                <span
+                  className={`inline-flex items-center gap-1 font-bold font-mono ${
+                    saldoLiquidoFiltrado >= 0 ? 'text-emerald-400' : 'text-red-400'
+                  }`}
+                  title="Saldo Líquido (Entradas - Saídas)"
+                >
+                  {saldoLiquidoFiltrado >= 0 ? (
+                    <TrendingUp className="w-3 h-3" />
+                  ) : (
+                    <TrendingDown className="w-3 h-3" />
+                  )}
+                  Saldo: {saldoLiquidoFiltrado > 0 ? `+${saldoLiquidoFiltrado}` : saldoLiquidoFiltrado}
+                </span>
+                <button
+                  onClick={() => setMesAnoFiltro('TODOS')}
+                  title="Remover filtro de mês"
+                  className="p-0.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors ml-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
+              <span className="text-[11px] text-slate-400 italic">
+                Exibindo todo o período histórico ({todasMovimentacoes.length} movimentações no total)
+              </span>
+            )}
+          </div>
+        </div>
+
         {/* Linha de Status dos Filtros e Alternador */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-800/80 text-xs">
           <div className="flex items-center gap-2 text-slate-400 flex-wrap">
             <span>
-              Exibindo <span className="font-bold text-white font-mono">{filtradas.length}</span> registros no livro
+              Exibindo <span className="font-bold text-white font-mono">{filtradas.length}</span> de{' '}
+              <span className="font-mono text-slate-400">{todasMovimentacoes.length}</span> registros no livro
             </span>
+            {mesAnoFiltro !== 'TODOS' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-300 border border-amber-500/30 rounded-md text-[11px] font-medium">
+                <Calendar className="w-3 h-3 text-amber-400" />
+                <span>{obterRotuloMes(mesAnoFiltro)}</span>
+                <button
+                  onClick={() => setMesAnoFiltro('TODOS')}
+                  className="hover:text-white ml-0.5"
+                  title="Remover filtro de mês"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {tipoFiltro !== 'TODOS' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 rounded-md text-[11px] font-medium">
+                <span>{tipoFiltro === 'ENTRADA' ? 'Apenas Entradas' : 'Apenas Saídas'}</span>
+                <button
+                  onClick={() => setTipoFiltro('TODOS')}
+                  className="hover:text-white ml-0.5"
+                  title="Remover filtro de tipo"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {perfilFiltro !== 'TODOS' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-800 text-slate-200 border border-slate-700 rounded-md text-[11px] font-medium">
+                <span>{rotuloPerfil(perfilFiltro)}</span>
+                <button
+                  onClick={() => setPerfilFiltro('TODOS')}
+                  className="hover:text-white ml-0.5"
+                  title="Remover filtro de perfil"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
             {temFiltroAtivo && (
               <button
                 onClick={limparFiltros}
-                className="text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1 font-semibold ml-1"
+                className="text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1 font-semibold ml-1 hover:underline"
               >
                 <RotateCcw className="w-3 h-3" />
-                <span>Limpar filtros</span>
+                <span>Limpar todos os filtros</span>
               </button>
             )}
           </div>
