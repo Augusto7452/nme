@@ -160,7 +160,13 @@ export const MovimentacoesView: React.FC<MovimentacoesViewProps> = ({
   const filtradas = useMemo(() => {
     return todasMovimentacoes.filter((item) => {
       if (tipoFiltro !== 'TODOS' && item.tipo !== tipoFiltro) return false;
-      if (perfilFiltro !== 'TODOS' && item.individuo.perfil !== perfilFiltro) return false;
+      if (perfilFiltro !== 'TODOS') {
+        if (perfilFiltro === 'PROVISORIO') {
+          if (item.individuo.perfil !== 'PROVISORIO' && item.individuo.perfil !== 'MONITORADO_GERAL') return false;
+        } else if (item.individuo.perfil !== perfilFiltro) {
+          return false;
+        }
+      }
 
       // Filtro por Mês (YYYY-MM)
       if (mesAnoFiltro !== 'TODOS') {
@@ -362,7 +368,8 @@ export const MovimentacoesView: React.FC<MovimentacoesViewProps> = ({
               className="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-400"
             >
               <option value="TODOS">Todos os Perfis</option>
-              <option value="MONITORADO_GERAL">Monitorados Gerais</option>
+              <option value="PROVISORIO">Provisórios</option>
+              <option value="SENTENCIADO">Sentenciados</option>
               <option value="AGRESSOR">Agressores (M. Penha)</option>
               <option value="VITIMA_PROTEGIDA">Vítimas Protegidas</option>
             </select>

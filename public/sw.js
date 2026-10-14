@@ -3,7 +3,7 @@
  * Oferece cache offline resiliente, checagem ativa de versão e atualização forçada na Vercel
  */
 
-const APP_VERSION = '2.2.0';
+const APP_VERSION = '2.3.0';
 const CACHE_NAME = `dme-pwa-v${APP_VERSION}`;
 
 const STATIC_ASSETS = [

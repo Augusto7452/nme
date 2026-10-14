@@ -53,7 +53,13 @@ export const MonitoradosListView: React.FC<MonitoradosListViewProps> = ({
 
   // Filtragem
   const filtrados = individuos.filter((ind) => {
-    if (filtroPerfil !== 'TODOS' && ind.perfil !== filtroPerfil) return false;
+    if (filtroPerfil !== 'TODOS') {
+      if (filtroPerfil === 'PROVISORIO') {
+        if (ind.perfil !== 'PROVISORIO' && ind.perfil !== 'MONITORADO_GERAL') return false;
+      } else if (ind.perfil !== filtroPerfil) {
+        return false;
+      }
+    }
     if (filtroStatus !== 'TODOS' && ind.status !== filtroStatus) return false;
     if (filtroFaixa !== 'TODOS') {
       const idade = calcularIdade(ind.dataNascimento);
@@ -163,7 +169,8 @@ export const MonitoradosListView: React.FC<MonitoradosListViewProps> = ({
               className="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-400"
             >
               <option value="TODOS">Todos os Perfis</option>
-              <option value="MONITORADO_GERAL">Monitorados Gerais</option>
+              <option value="PROVISORIO">Provisórios</option>
+              <option value="SENTENCIADO">Sentenciados</option>
               <option value="AGRESSOR">Agressores (M. Penha)</option>
               <option value="VITIMA_PROTEGIDA">Vítimas Protegidas</option>
             </select>
@@ -320,7 +327,9 @@ export const MonitoradosListView: React.FC<MonitoradosListViewProps> = ({
                               ? 'bg-purple-950 text-purple-300 border border-purple-800'
                               : ind.perfil === 'AGRESSOR'
                               ? 'bg-amber-950 text-amber-300 border border-amber-800'
-                              : 'bg-slate-800 text-slate-300 border border-slate-700'
+                              : ind.perfil === 'SENTENCIADO'
+                              ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                              : 'bg-blue-950 text-blue-300 border border-blue-800'
                           }`}
                         >
                           {rotuloPerfil(ind.perfil)}
@@ -524,7 +533,9 @@ export const MonitoradosListView: React.FC<MonitoradosListViewProps> = ({
                               ? 'bg-purple-950 text-purple-300 border border-purple-800'
                               : ind.perfil === 'AGRESSOR'
                               ? 'bg-amber-950 text-amber-300 border border-amber-800'
-                              : 'bg-slate-800 text-slate-300 border border-slate-700'
+                              : ind.perfil === 'SENTENCIADO'
+                              ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                              : 'bg-blue-950 text-blue-300 border border-blue-800'
                           }`}
                         >
                           {rotuloPerfil(ind.perfil)}

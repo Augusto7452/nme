@@ -1,4 +1,4 @@
-export type PerfilTipo = 'MONITORADO_GERAL' | 'AGRESSOR' | 'VITIMA_PROTEGIDA';
+export type PerfilTipo = 'PROVISORIO' | 'SENTENCIADO' | 'MONITORADO_GERAL' | 'AGRESSOR' | 'VITIMA_PROTEGIDA';
 
 export type StatusMonitoramento = 
   | 'ATIVO' 

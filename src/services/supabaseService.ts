@@ -1,5 +1,5 @@
 import { getSupabaseClient, getSupabaseAdminClient } from '../lib/supabase';
-import { IndividuoMonitorado, MovimentacaoRegistro, RegistroFuga, UsuarioOperador } from '../types/monitoring';
+import { IndividuoMonitorado, MovimentacaoRegistro, RegistroFuga, UsuarioOperador, PerfilTipo } from '../types/monitoring';
 
 // Interface do banco de dados (snake_case)
 interface IndividuoDB {
@@ -9,7 +9,7 @@ interface IndividuoDB {
   data_nascimento: string;
   genero: 'MASCULINO' | 'FEMININO' | 'OUTRO';
   foto_url?: string;
-  perfil: 'MONITORADO_GERAL' | 'AGRESSOR' | 'VITIMA_PROTEGIDA';
+  perfil: PerfilTipo;
   status: 'ATIVO' | 'DESLIGADO' | 'FORAGIDO' | 'SUSPENSO' | 'RECAPTURA_PENDENTE';
   numero_processo: string;
   vara_judicial: string;
@@ -126,11 +126,15 @@ function converterParaApp(
  * Converte registro do app para o formato snake_case do banco de dados com sanitização estrita
  */
 function converterParaDB(ind: IndividuoMonitorado): any {
-  let perfilValido: 'MONITORADO_GERAL' | 'AGRESSOR' | 'VITIMA_PROTEGIDA' = 'MONITORADO_GERAL';
+  let perfilValido: string = ind.perfil || 'PROVISORIO';
   if (ind.perfil === 'AGRESSOR' || (ind.perfil as string) === 'AGRESSOR_VINCULADO') {
     perfilValido = 'AGRESSOR';
   } else if (ind.perfil === 'VITIMA_PROTEGIDA') {
     perfilValido = 'VITIMA_PROTEGIDA';
+  } else if (ind.perfil === 'SENTENCIADO') {
+    perfilValido = 'SENTENCIADO';
+  } else if (ind.perfil === 'PROVISORIO') {
+    perfilValido = 'PROVISORIO';
   }
 
   // FK individuo_vinculado_id: DEVE ser null se for vazio para evitar erro 23503 do Postgres

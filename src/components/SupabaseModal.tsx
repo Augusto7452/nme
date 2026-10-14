@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS public.individuos_monitorados (
     data_nascimento DATE NOT NULL,
     genero VARCHAR(20) NOT NULL CHECK (genero IN ('MASCULINO', 'FEMININO', 'OUTRO')),
     foto_url TEXT,
-    perfil VARCHAR(30) NOT NULL CHECK (perfil IN ('MONITORADO_GERAL', 'AGRESSOR', 'VITIMA_PROTEGIDA')),
+    perfil VARCHAR(30) NOT NULL CHECK (perfil IN ('PROVISORIO', 'SENTENCIADO', 'MONITORADO_GERAL', 'AGRESSOR', 'VITIMA_PROTEGIDA')),
     status VARCHAR(30) NOT NULL DEFAULT 'ATIVO' CHECK (status IN ('ATIVO', 'DESLIGADO', 'FORAGIDO', 'SUSPENSO', 'RECAPTURA_PENDENTE')),
     
     -- Dados Jurídicos e Judiciais

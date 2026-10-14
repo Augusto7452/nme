@@ -46,7 +46,8 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
 
     const vitimas = doGrupo.filter((i) => i.perfil === 'VITIMA_PROTEGIDA').length;
     const agressores = doGrupo.filter((i) => i.perfil === 'AGRESSOR').length;
-    const geral = doGrupo.filter((i) => i.perfil === 'MONITORADO_GERAL').length;
+    const provisorios = doGrupo.filter((i) => i.perfil === 'PROVISORIO' || i.perfil === 'MONITORADO_GERAL').length;
+    const sentenciados = doGrupo.filter((i) => i.perfil === 'SENTENCIADO').length;
     const foragidos = doGrupo.filter((i) => i.status === 'FORAGIDO').length;
 
     const percentual = total > 0 ? ((doGrupo.length / total) * 100).toFixed(1) : '0';
@@ -57,7 +58,8 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
       total: doGrupo.length,
       vitimas,
       agressores,
-      geral,
+      provisorios,
+      sentenciados,
       foragidos,
       percentual,
       individuos: doGrupo,
@@ -151,8 +153,12 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
               {/* Sub-divisões */}
               <div className="space-y-0.5 sm:space-y-1 text-[10px] sm:text-[11px] text-slate-400 border-t border-slate-800/80 pt-2 font-mono">
                 <div className="flex justify-between">
-                  <span>Gerais:</span>
-                  <span className="text-slate-200 font-semibold">{item.geral}</span>
+                  <span>Provisórios:</span>
+                  <span className="text-blue-300 font-semibold">{item.provisorios}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Sentenciados:</span>
+                  <span className="text-emerald-300 font-semibold">{item.sentenciados}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Agressores:</span>
@@ -335,7 +341,17 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
                     </td>
 
                     <td className="py-2.5 px-3 whitespace-nowrap">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300">
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          ind.perfil === 'VITIMA_PROTEGIDA'
+                            ? 'bg-purple-950 text-purple-300 border border-purple-800'
+                            : ind.perfil === 'AGRESSOR'
+                            ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                            : ind.perfil === 'SENTENCIADO'
+                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                            : 'bg-blue-950 text-blue-300 border border-blue-800'
+                        }`}
+                      >
                         {rotuloPerfil(ind.perfil)}
                       </span>
                     </td>

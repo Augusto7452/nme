@@ -91,12 +91,18 @@ export function formatarProcessoCNJ(processo: string): string {
 
 export function rotuloPerfil(perfil: PerfilTipo): string {
   switch (perfil) {
+    case 'PROVISORIO':
+      return 'Provisório';
+    case 'SENTENCIADO':
+      return 'Sentenciado';
     case 'MONITORADO_GERAL':
-      return 'Monitorado Geral';
+      return 'Provisório';
     case 'AGRESSOR':
       return 'Agressor (Maria da Penha)';
     case 'VITIMA_PROTEGIDA':
       return 'Vítima Protegida';
+    default:
+      return 'Monitorado';
   }
 }
 

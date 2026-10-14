@@ -29,7 +29,7 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
   const [cpf, setCpf] = useState('');
   const [dataNascimento, setDataNascimento] = useState('1995-05-15');
   const [genero, setGenero] = useState<'MASCULINO' | 'FEMININO' | 'OUTRO'>('MASCULINO');
-  const [perfil, setPerfil] = useState<PerfilTipo>('MONITORADO_GERAL');
+  const [perfil, setPerfil] = useState<PerfilTipo>('PROVISORIO');
   const [status, setStatus] = useState<StatusMonitoramento>('ATIVO');
   const [fotoUrl, setFotoUrl] = useState('');
 
@@ -75,7 +75,7 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
       setCpf(individuoParaEditar.cpf || '');
       setDataNascimento(individuoParaEditar.dataNascimento || '1995-05-15');
       setGenero(individuoParaEditar.genero || 'MASCULINO');
-      setPerfil(individuoParaEditar.perfil || 'MONITORADO_GERAL');
+      setPerfil(individuoParaEditar.perfil || 'PROVISORIO');
       setStatus(individuoParaEditar.status || 'ATIVO');
       setFotoUrl(individuoParaEditar.fotoUrl || '');
 
@@ -109,7 +109,7 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
       setCpf('');
       setDataNascimento('1995-05-15');
       setGenero('MASCULINO');
-      setPerfil('MONITORADO_GERAL');
+      setPerfil('PROVISORIO');
       setStatus('ATIVO');
       setFotoUrl('');
       setTipoPenalSelect('Art. 129, § 9º - Lesão Corporal (Violência Doméstica)');
@@ -213,9 +213,9 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
         resumoTipificacao: resumoTipificacao.trim(),
         numeroTornozeleiraOuReceptor: numeroTornozeleira.trim() || individuoParaEditar.numeroTornozeleiraOuReceptor,
         imeiDispositivo: imeiDispositivo.trim(),
-        raioExclusaoMetros: perfil !== 'MONITORADO_GERAL' ? raioExclusao : undefined,
-        individuoVinculadoId: individuoVinculadoId && individuoVinculadoId.trim() !== '' ? individuoVinculadoId.trim() : undefined,
-        nomeIndividuoVinculado: nomeVinculado || undefined,
+        raioExclusaoMetros: (perfil === 'AGRESSOR' || perfil === 'VITIMA_PROTEGIDA') ? raioExclusao : undefined,
+        individuoVinculadoId: (perfil === 'AGRESSOR' || perfil === 'VITIMA_PROTEGIDA') && individuoVinculadoId && individuoVinculadoId.trim() !== '' ? individuoVinculadoId.trim() : undefined,
+        nomeIndividuoVinculado: (perfil === 'AGRESSOR' || perfil === 'VITIMA_PROTEGIDA') ? (nomeVinculado || undefined) : undefined,
         enderecoResidencial: enderecoResidencial.trim() || 'Endereço residencial cadastrado',
         cidade: cidade.trim() || 'São Paulo',
         estado: estado.trim() || 'SP',
@@ -253,9 +253,9 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
       resumoTipificacao: resumoTipificacao.trim(),
       numeroTornozeleiraOuReceptor: numeroTornozeleira.trim() || (perfil === 'VITIMA_PROTEGIDA' ? 'RX-BOT-PENDENTE' : 'TX-PENDENTE'),
       imeiDispositivo: imeiDispositivo.trim() || '',
-      raioExclusaoMetros: perfil !== 'MONITORADO_GERAL' ? raioExclusao : undefined,
-      individuoVinculadoId: individuoVinculadoId && individuoVinculadoId.trim() !== '' ? individuoVinculadoId.trim() : undefined,
-      nomeIndividuoVinculado: nomeVinculado || undefined,
+      raioExclusaoMetros: (perfil === 'AGRESSOR' || perfil === 'VITIMA_PROTEGIDA') ? raioExclusao : undefined,
+      individuoVinculadoId: (perfil === 'AGRESSOR' || perfil === 'VITIMA_PROTEGIDA') && individuoVinculadoId && individuoVinculadoId.trim() !== '' ? individuoVinculadoId.trim() : undefined,
+      nomeIndividuoVinculado: (perfil === 'AGRESSOR' || perfil === 'VITIMA_PROTEGIDA') ? (nomeVinculado || undefined) : undefined,
       dataPrimeiraEntrada: dataHoraIso,
       enderecoResidencial: enderecoResidencial.trim() || 'Endereço residencial cadastrado',
       cidade: cidade.trim() || 'São Paulo',
@@ -471,25 +471,37 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
                   <label className="block text-xs font-medium text-slate-300 mb-1">
                     Classificação / Perfil de Monitoramento <span className="text-red-400">*</span>
                   </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                     <button
                       type="button"
-                      onClick={() => setPerfil('MONITORADO_GERAL')}
+                      onClick={() => setPerfil('PROVISORIO')}
                       className={`p-2.5 rounded-lg border text-left transition-colors ${
-                        perfil === 'MONITORADO_GERAL'
-                          ? 'bg-slate-800 border-amber-400 text-white'
+                        perfil === 'PROVISORIO' || perfil === 'MONITORADO_GERAL'
+                          ? 'bg-blue-950/60 border-blue-400 text-white shadow-sm'
                           : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
                       }`}
                     >
-                      <div className="font-semibold text-xs text-white">Monitorado Geral</div>
-                      <div className="text-[10px] text-slate-400">Regime aberto / cautelares</div>
+                      <div className="font-semibold text-xs text-blue-300">Provisório</div>
+                      <div className="text-[10px] text-slate-400">Medidas cautelares / custódia</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPerfil('SENTENCIADO')}
+                      className={`p-2.5 rounded-lg border text-left transition-colors ${
+                        perfil === 'SENTENCIADO'
+                          ? 'bg-emerald-950/60 border-emerald-400 text-white shadow-sm'
+                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="font-semibold text-xs text-emerald-300">Sentenciado</div>
+                      <div className="text-[10px] text-slate-400">Cumprimento de pena / VEC</div>
                     </button>
                     <button
                       type="button"
                       onClick={() => setPerfil('AGRESSOR')}
                       className={`p-2.5 rounded-lg border text-left transition-colors ${
                         perfil === 'AGRESSOR'
-                          ? 'bg-amber-950/40 border-amber-500 text-amber-200'
+                          ? 'bg-amber-950/60 border-amber-500 text-amber-200 shadow-sm'
                           : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
                       }`}
                     >
@@ -501,7 +513,7 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
                       onClick={() => setPerfil('VITIMA_PROTEGIDA')}
                       className={`p-2.5 rounded-lg border text-left transition-colors ${
                         perfil === 'VITIMA_PROTEGIDA'
-                          ? 'bg-purple-950/40 border-purple-400 text-purple-200'
+                          ? 'bg-purple-950/60 border-purple-400 text-purple-200 shadow-sm'
                           : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
                       }`}
                     >
@@ -607,7 +619,7 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
               3. Telemetria & Equipamento de Monitoramento
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-950/50 p-4 rounded-xl border border-slate-800/80">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-950/50 p-4 rounded-xl border border-slate-800/80">
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">
                   Nº Série Tornozeleira / Receptor
@@ -621,18 +633,7 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">IMEI do Equipamento</label>
-                <input
-                  type="text"
-                  value={imeiDispositivo}
-                  onChange={(e) => setImeiDispositivo(e.target.value)}
-                  placeholder="Ex: 864291048291032"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-mono"
-                />
-              </div>
-
-              {perfil !== 'MONITORADO_GERAL' ? (
+              {(perfil === 'AGRESSOR' || perfil === 'VITIMA_PROTEGIDA') ? (
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Raio de Exclusão (Metros)</label>
                   <input
@@ -644,13 +645,15 @@ export const CadastrarIndividuoModal: React.FC<CadastrarIndividuoModalProps> = (
                 </div>
               ) : (
                 <div className="flex items-center text-xs text-slate-500 pt-6">
-                  Monitoramento padrão de área residencial.
+                  {perfil === 'PROVISORIO'
+                    ? 'Monitoramento de medida cautelar / custódia.'
+                    : 'Monitoramento penal de execução de sentença.'}
                 </div>
               )}
 
               {/* Vinculação de Par (Agressor ou Vítima) */}
-              {perfil !== 'MONITORADO_GERAL' && (
-                <div className="sm:col-span-3">
+              {(perfil === 'AGRESSOR' || perfil === 'VITIMA_PROTEGIDA') && (
+                <div className="sm:col-span-2">
                   <label className="block text-xs font-medium text-slate-300 mb-1">
                     {perfil === 'AGRESSOR' ? 'Vincular à Vítima Protegida:' : 'Vincular ao Agressor:'}
                   </label>

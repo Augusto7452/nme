@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Divisão de Monitoramento Eletrônico",
   "short_name": "Divisão de Monitoramento",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Sistema oficial de registro e gestão da Divisão de Monitoramento Eletrônico, agressores, vítimas protegidas e registros de fuga.",
   "start_url": "/",
   "scope": "/",

@@ -323,7 +323,7 @@ export function gerarRelatorioPDF(
     const totalGeral = individuos.length;
 
     const headResumo = [
-      ['Faixa Etária', 'Qtd. Total', '% Proporção', 'Gerais', 'Agressores', 'Vítimas Protegidas', 'Foragidos'],
+      ['Faixa Etária', 'Qtd. Total', '% Proporção', 'Provisórios', 'Sentenciados', 'Agressores', 'Vítimas Protegidas', 'Foragidos'],
     ];
 
     const bodyResumo = faixas.map((f) => {
@@ -333,11 +333,12 @@ export function gerarRelatorioPDF(
       });
       const vit = doGrupo.filter((i) => i.perfil === 'VITIMA_PROTEGIDA').length;
       const agr = doGrupo.filter((i) => i.perfil === 'AGRESSOR').length;
-      const ger = doGrupo.filter((i) => i.perfil === 'MONITORADO_GERAL').length;
+      const pro = doGrupo.filter((i) => i.perfil === 'PROVISORIO' || i.perfil === 'MONITORADO_GERAL').length;
+      const sen = doGrupo.filter((i) => i.perfil === 'SENTENCIADO').length;
       const fug = doGrupo.filter((i) => i.status === 'FORAGIDO').length;
       const pct = totalGeral > 0 ? `${((doGrupo.length / totalGeral) * 100).toFixed(1)}%` : '0%';
 
-      return [rotuloFaixaEtaria(f), doGrupo.length.toString(), pct, ger.toString(), agr.toString(), vit.toString(), fug.toString()];
+      return [rotuloFaixaEtaria(f), doGrupo.length.toString(), pct, pro.toString(), sen.toString(), agr.toString(), vit.toString(), fug.toString()];
     });
 
     autoTable(doc, {
